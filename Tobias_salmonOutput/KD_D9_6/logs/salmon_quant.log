@@ -1,0 +1,40 @@
+[2018-06-02 13:58:11.105] [jointLog] [info] parsing read library format
+[2018-06-02 13:58:11.105] [jointLog] [info] There is 1 library.
+[2018-06-02 13:58:11.150] [jointLog] [info] Loading Quasi index
+[2018-06-02 13:58:11.151] [jointLog] [info] Loading 32-bit quasi index
+[2018-06-02 13:58:32.694] [jointLog] [info] done
+[2018-06-02 13:58:32.695] [jointLog] [info] Index contained 203027 targets
+[2018-06-02 13:58:33.040] [jointLog] [info] Automatically detected most likely library type as U
+[2018-06-02 13:59:57.772] [jointLog] [info] Computed 327560 rich equivalence classes for further processing
+[2018-06-02 13:59:57.772] [jointLog] [info] Counted 41546312 total reads in the equivalence classes 
+[2018-06-02 13:59:57.816] [jointLog] [info] Mapping rate = 92.834%
+
+[2018-06-02 13:59:57.816] [jointLog] [info] finished quantifyLibrary()
+[2018-06-02 13:59:57.818] [jointLog] [info] Starting optimizer
+[2018-06-02 13:59:57.773] [fileLog] [info] 
+At end of round 0
+==================
+Observed 44753325 total fragments (44753325 in most recent round)
+
+[2018-06-02 13:59:57.973] [jointLog] [info] Marked 0 weighted equivalence classes as degenerate
+[2018-06-02 13:59:57.985] [jointLog] [info] iteration = 0 | max rel diff. = 59.8155
+[2018-06-02 13:59:59.171] [jointLog] [info] iteration = 100 | max rel diff. = 0.145824
+[2018-06-02 14:00:00.374] [jointLog] [info] iteration = 200 | max rel diff. = 0.282024
+[2018-06-02 14:00:01.563] [jointLog] [info] iteration = 300 | max rel diff. = 0.0485317
+[2018-06-02 14:00:02.771] [jointLog] [info] iteration = 400 | max rel diff. = 0.035269
+[2018-06-02 14:00:03.951] [jointLog] [info] iteration = 500 | max rel diff. = 0.0253534
+[2018-06-02 14:00:05.125] [jointLog] [info] iteration = 600 | max rel diff. = 0.0200809
+[2018-06-02 14:00:06.303] [jointLog] [info] iteration = 700 | max rel diff. = 0.033562
+[2018-06-02 14:00:07.498] [jointLog] [info] iteration = 800 | max rel diff. = 0.0213045
+[2018-06-02 14:00:08.710] [jointLog] [info] iteration = 900 | max rel diff. = 0.0139984
+[2018-06-02 14:00:09.898] [jointLog] [info] iteration = 1000 | max rel diff. = 0.0314718
+[2018-06-02 14:00:11.090] [jointLog] [info] iteration = 1100 | max rel diff. = 0.0125533
+[2018-06-02 14:00:12.287] [jointLog] [info] iteration = 1200 | max rel diff. = 0.0109104
+[2018-06-02 14:00:13.125] [jointLog] [info] iteration = 1271 | max rel diff. = 0.00968606
+[2018-06-02 14:00:13.145] [jointLog] [info] Finished optimizer
+[2018-06-02 14:00:13.145] [jointLog] [info] writing output 
+
+[2018-06-02 14:00:13.498] [jointLog] [warning] NOTE: Read Lib [/home/jtobias/jp201805/fastq/CL100021371_L02_41.fq.gz] :
+
+Detected a *potential* strand bias > 1% in an unstranded protocol check the file: /home/jtobias/jp201805/salmon/KD_D9_6/lib_format_counts.json for details
+

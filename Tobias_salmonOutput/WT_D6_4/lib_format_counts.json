@@ -1,0 +1,22 @@
+{
+    "read_files": "/home/jtobias/jp201805/fastq/CL100021371_L01_25.fq.gz",
+    "expected_format": "U",
+    "compatible_fragment_ratio": 1.0,
+    "num_compatible_fragments": 44166543,
+    "num_assigned_fragments": 44166543,
+    "num_consistent_mappings": 210420693,
+    "num_inconsistent_mappings": 0,
+    "strand_mapping_bias": 0.5182783995488505,
+    "MSF": 0,
+    "OSF": 0,
+    "ISF": 0,
+    "MSR": 0,
+    "OSR": 0,
+    "ISR": 0,
+    "SF": 109056500,
+    "SR": 101364193,
+    "MU": 0,
+    "OU": 0,
+    "IU": 0,
+    "U": 0
+}

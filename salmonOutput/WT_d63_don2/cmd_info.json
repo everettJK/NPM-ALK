@@ -1,0 +1,10 @@
+{
+    "salmon_version": "0.11.3",
+    "threads": "8",
+    "index": "/home/everett/data/sequenceDatabases/Salmon/GRCh38.gencode29/",
+    "libType": "A",
+    "mates1": "data/RNAseq_data1/US-10016554.HKRDHUMjqiEAAERAAPEI-207.HGTMGBBXX_1.1.fq.gz",
+    "mates2": "data/RNAseq_data1/US-10016554.HKRDHUMjqiEAAERAAPEI-207.HGTMGBBXX_1.2.fq.gz",
+    "output": "salmonOutput/WT_d63_don2",
+    "auxDir": "aux_info"
+}

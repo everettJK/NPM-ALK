@@ -1,0 +1,581 @@
+---
+fontsize: 11pt
+geometry: margin=0.50in
+subparagraph: yes
+title: NPM-ALK
+date: 2019-05-16
+author: John K. Everett
+indent: false
+header-includes:
+   - \usepackage{pdflscape}
+   - \newcommand{\blandscape}{\begin{landscape}}
+   - \newcommand{\elandscape}{\end{landscape}}
+   - \usepackage{pdfpages}
+   - \usepackage{graphicx}
+   - \usepackage{setspace}
+output:
+  pdf_document:
+    toc: false
+    keep_tex: yes
+    latex_engine: xelatex
+---
+```{r echo = FALSE, message=FALSE, warning=FALSE}
+library(knitr)
+library(kableExtra)
+library(png)
+library(grid)
+library(ggplot2)
+library(dplyr)
+library(RColorBrewer)
+library(gridExtra)
+ppNum <- function(n) format(n, big.mark = ",", scientific = FALSE, trim = TRUE)
+report <- readRDS('report.rds')
+```
+
+
+\normalsize
+
+This analysis examines the effect of NPM-ALK transgenes delivered to CD4 T-cells by means of a lentiviral vector. 
+Four  NPM-ALK transgenes were studied: a naturally occurring NPM-ALK fusion (WT), a NPM-ALK triple mutant (TrpM), 
+NPM-ALK with no kinase activity (KD), and a singly substituted transgene (Y664F). Wild type NPM-ALK is known to 
+transform T-cells where Y664F has been shown to transform cells more efficiently. WT and Y664 transformation is 
+dependent upon an active kinase domain. The triple mutant (Y567F, Y644F, Y646F) is of particular interest because 
+it begins to transform T-cells at early time points similar to WT though these cells loose their CD30 marking 
+and begin to die after three weeks similar to KD clones (Figure 1).  
+
+\vspace{0.25cm}
+
+
+\small
+Figure 1. Cell sorting experiments.
+\normalsize
+
+```{r Figure1, fig.height=4, echo=FALSE, fig.align='center'}
+img <- readPNG("figures/NPM_ALK_cell_sorting2.png")
+grid.raster(img)
+```
+
+\vspace{0.25cm}
+
+RNAseq analyses were performed in order to identify changes in the transcriptome of clones 
+(WT, Y664F, and KD) at different time points. While KD clones possesed transcriptomes 
+rather similar to uninfected cells, WT and Y664F clones possesed transcriptomes distinct from KD. 
+In the PCA analysis (Figure 2), WT and Y664F clones moved downward in the plot over time where the Y664F clones 
+move downard faster which may explain in part why they transform cells more effectively.
+
+\newpage
+
+\small
+Figure 2. RNAseq of WT, Y664F, KD, and uninfected cells at different time points. Different donors 
+are denoted with numbers.
+\normalsize
+
+```{r Figure2, fig.height=8, echo=FALSE, fig.align='center'}
+report$salmon1.pca.plot
+```
+\vspace{0.25cm}
+
+\newpage
+
+Comparing WT clone transcription levels (days 9, 12, 33, and 63) to day 6 reveals a number of genes 
+with transcription levels that significantly change over time (Figure 3).
+
+\vspace{0.50cm}
+
+\small
+Figure 3. RNAseq of WT clones compared to the earliest WT clone. Genes are ordered from the most 
+significant transcription change (top) to less significant changes (bottom). Genes shown are the more significant 
+genes which can easily be visualized in a single figure.
+\normalsize
+
+\vspace{0.25cm}
+
+```{r Figure3, fig.height=8, echo=FALSE, fig.align='center'}
+report$RNAseq1.pval.WT_vs_earlyWT
+```
+
+\newpage
+
+Comparing Y664F clone transcription levels to WT clones at the same time point reveals 
+significant changes in the transcription of select genes (Figure 4). The most significant 
+change in transcription atop of Figure 4, MYD88, may be of interest. 
+
+\vspace{0.50cm}
+
+\small
+Figure 4. RNAseq of Y664F clone compared to WT clones at the same time points. Genes are ordered from the most 
+significant transcription change (top) to less significant changes (bottom). Genes shown are the more significant 
+genes which can easily be visualized in a single figure.
+\normalsize
+
+\vspace{0.25cm}
+
+```{r Figure4, fig.height=8, echo=FALSE, fig.align='center'}
+report$RNAseq1.pval.WT_Y664F_vs_WT
+```
+
+\newpage
+
+
+A second RNAseq analysis was performed in order to identify changes in the transcriptome of WT, TrpM, and KD at different time points. 
+Time points of day 6 and day 9 were selected as time points of interest because they mark the beginning of cellular transformation and 
+the beginning of CD30 loss in TrpM clones. Figure 5 shows a RNAseq PCA analysis which clearly separates clones and time points with the 
+TrpM clones plotted between WT and KD samples which is reflective of TrpM's inability to fully transform cells.
+
+\vspace{0.5cm}
+
+\small
+Figure 5. PCA analysis of RNAseq experiment of WT, TrpM and KD clones.
+\normalsize
+
+
+```{r, fig.height=7, echo=FALSE, fig.align='center'}
+report$salmon2.pca.plot
+```
+
+\newpage
+
+WT and TrpM genes with the most significantly different changes in transcription compared to KD clones 
+is shown in Figure 6.
+
+\vspace{1.0cm}
+
+\small
+Figure 6. RNAseq analyses of WT and TrpM clones compared to KD clones. Genes are ordered from the most 
+significant change (top left) to less significant changes (bottom right) where the second heatmap on the right is 
+a continuation of the heatmap on the left.
+\normalsize
+
+\vspace{0.25cm}
+
+```{r, fig.height=8, echo=FALSE, fig.align='center'}
+grid.arrange(report$RNAseq2_WT_TrpM_vs_KD.plotA, report$RNAseq2_WT_TrpM_vs_KD.plotB, ncol=2)
+```
+
+\newpage
+
+Comparing TrpM clones to WT clones reveals a number of genes with significantly different transcription 
+levels most of which are lower in the TrpM clones (Figure 7).
+
+\vspace{0.5cm}
+
+\small
+Figure 7. RNAseq analyses of TrpM clones compared to WT clones. Genes are ordered from the most 
+significant change (top) to less significant changes (bottom). Genes shown are the more significant 
+genes which can easily be visualized in a single figure.
+\normalsize
+
+\vspace{0.25cm}
+
+```{r, fig.height=8, echo=FALSE, fig.align='center'}
+report$RNAseq2.pval.TrpM_vs_WT
+```
+
+
+\newpage
+
+In order to better understand which pathways are altered in WT clones compared to KD clones, 
+gene with significantly changed transcription levels in WT clones were used for KEGG pathway enrichment analyses   
+(Table 1).  
+   
+The top two KEGG pathways from Table 1 are illustrated below where log2 fold gene transcription changes compared to KD are color coded. 
+The top 10 KEGG pathways identified in Table 1 are illustrated in supplemental Figure S1.
+
+\vspace{0.5cm}
+
+```{r, out.width='100%', fig.align ='center', echo=FALSE}
+library(png)
+library(grid)
+img <- readPNG('KEGG.schematics/hsa04060.WT_D9_vs_KD_D9.png')
+ grid.raster(img)
+```
+
+```{r, out.width='100%', fig.align ='center', echo=FALSE}
+library(png)
+library(grid)
+img <- readPNG('KEGG.schematics/hsa04630.WT_D9_vs_KD_D9.png')
+ grid.raster(img)
+```
+
+\newpage
+
+\small
+Table 1. Enriched pathways from the day 9 WT vs KD RNAseq comparison. Genes with increased transcription are shown 
+with uppercase names while genes with decreased transcription are shown with lowercase names. Full table is provided in Table S1.
+
+\normalsize
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+t <- report$WT_D9_vs_KD_D9.KEGG[1:12,c(2,3,5,6,8)]
+t <- t %>% dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3))))
+kable(t, "latex",  row.names = F, booktabs = T, linesep = '', align = 'cclll') %>% 
+  kable_styling(latex_options = "striped", font_size = 8) %>% 
+  column_spec(1, width = "3em") %>% 
+  column_spec(2, width = "2em") %>% 
+  column_spec(3, width = "7em") %>% 
+  column_spec(4, width = "10em") %>% 
+  column_spec(5, width = "40em")
+```
+
+\newpage
+\small
+Table 1 (continued). 
+\normalsize
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+t <- report$WT_D9_vs_KD_D9.KEGG[13:30,c(2,3,5,6,8)]
+t <- t %>% dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3))))
+kable(t, "latex",  row.names = F, booktabs = T, linesep = '', align = 'cclll') %>% 
+  kable_styling(latex_options = "striped", font_size = 8) %>% 
+  column_spec(1, width = "3em") %>% 
+  column_spec(2, width = "2em") %>% 
+  column_spec(3, width = "7em") %>% 
+  column_spec(4, width = "10em") %>% 
+  column_spec(5, width = "40em")
+```
+
+\newpage
+
+Viral integration site analysis of cultures transfected with both WT and Y664F transgenes show that 
+cultures become oligoclonal over time. The relative clonal abundances of provided samples, arranged 
+by earliest time point, are shown in Figure 8 where the relative abundances of the most abundant 50 
+clones are shown as stacked colored bars while less abundant clones are relegated to single 
+gray low abundance bars. 
+
+\vspace{0.25cm}
+
+\small
+Figure 8. Clonal relative abundance plots.
+\normalsize
+
+\vspace{0.25cm}
+
+```{r, echo=FALSE, warning=FALSE, error=FALSE, fig.height=8, fig.width=7.5, dev='png', dpi=300}
+grid.arrange(grobs=report$sampleAbundancePlots, ncol=5,  padding = unit(0.1, "line"))
+```
+
+\newpage
+
+Integration profiles of cultures from three donors transfected with both WT and Y664F transgene were tracked 
+over multiple time points and the rate at which they become oligoclonal is depicted in Figure 9.
+
+\vspace{0.25cm}
+
+\small
+Figure 9. Clonality of transfected cultures over time.
+\normalsize
+
+```{r, fig.align='center', fig.height=5, echo=FALSE, message=FALSE}
+data.frame(subset(report$intSites, report$intSites$patient %in% c('pNA92', 'pNA93', 'pNA85', 'pNA92_Y664F', 'pNA93_Y664F', 'pNA85_Y664F'))) %>%
+dplyr::group_by(patient, timePointDays) %>%
+dplyr::summarise(clones = n_distinct(posid)) %>%
+dplyr::ungroup() %>%
+dplyr::mutate(genome = ifelse(grepl('Y664F', patient), 'Y664F', 'WT')) %>%
+ggplot(aes(timePointDays, log10(clones), group = patient, color = patient, shape = genome)) + 
+  theme_bw() + 
+  scale_color_manual(values = brewer.pal(n = 6, name = "Paired")) +
+  geom_point(size=3) + 
+  geom_line() + 
+  labs(x = 'Days', y = 'log10 (Unique clones)') +
+  theme(axis.text=element_text(size=14),
+        axis.title=element_text(size=16))
+  
+```
+
+\newpage
+
+Some `r dplyr::n_distinct(c(report$type2_posids, report$type3_posids, report$type4_posids))` clones 
+(`r sprintf("%.2f%%", (dplyr::n_distinct(c(report$type2_posids, report$type3_posids, report$type4_posids)) / dplyr::n_distinct(c(report$type1_posids, report$type2_posids, report$type3_posids, report$type4_posids)))*100)` of all clones) 
+in the longitudinal data set reached a maxim abundance of $\geq$ 25 cells at one or more time points (Figure 10). Four types of clonal abundance trajectories were observed:  
+
+\vspace{0.25cm}
+
+1. Clones which were only observed at the earliest time points (`r sprintf("%.2f%%", (dplyr::n_distinct(c(report$type1_posids)) / dplyr::n_distinct(c(report$type1_posids, report$type2_posids, report$type3_posids, report$type4_posids)))*100)` of all clones).
+2. Clones which reached a maximal abundance $\geq$ 25 cells by day 28 and then declined (Figure 10, top pane).
+3. Clones which slowly increased in abundance and exceeded 25 cells (Figure 10, bottom pane, bottom cluster).
+4. Clones which rapidly increased in abundance beyond 25 cells (Figure 10, bottom pane, top cluster).
+
+\vspace{0.25cm}
+
+The genes nearest to integration sites in clones from each clonal trajectory type do not substantially overlap with the 
+enriched KEGG pathways genes found the WT vs KD day 9 RNAseq contrast (Table 1) nor do they strongly cluster to a discrete number of  KEGG pathways (Table S2). 
+The nearest genes for clones from each trajectory type are provided in Table S3.
+
+\vspace{0.25cm}
+\small
+Table 2. Clonal abundance trajectories clone counts.
+\normalsize
+```{r, echo = FALSE}
+kable(report$clonAbundanceTrajectoriesTable[,c(1,2,4)], "latex",  row.names = F, booktabs = T, linesep = '', align = 'cccc') %>% kable_styling(position = "center")
+```
+
+\vspace{0.5cm}
+
+Instances of clones with abundances $\geq$ 25 cells with integrations found near the same gene across multiple trial subjects are reported in Table 3. 
+
+\vspace{0.5cm}
+
+\small
+Figure 10. Clonal abundance trajectories. Top pane: clones which exceeded abundances of 25 cells and then declined in later time points. 
+Bottom pane: Subset of clones that exceeded abundances of 25 cells and reached their highest abundance at their final time point. 
+Data points not connected with lines originate from clones which were not analyzed or detected at earlier time points presumably due to their low abundance. 
+\normalsize
+\vspace{0.25cm}
+```{r, fig.align='center', fig.height=4, echo=FALSE, message=FALSE}
+report$clonAbundanceTrajectories
+```
+
+\newpage
+
+\small
+Table 3. Tally of trial subjects with three or more abundant clones near the same gene.
+\normalsize
+\vspace{0.25cm}
+```{r, echo=FALSE}
+kable(report$genesFoundAcrossMultSubject, "latex",  row.names = F, booktabs = T, linesep = '', align = 'lcccc') %>% 
+  kable_styling(latex_options = c("striped"), font_size = 10)
+```
+
+
+\newpage
+
+Considering only donors with longitudinal trials and both WT and Y664F transgenes (pNA92, pNA93, pNA85), 
+plotting nearest gene integration frequencies between early and later time points (Figure 11) show that ARID1A 
+is placed more starkly above the diagonal in the Y664F trials than WT trials suggesting that it confers more of 
+a survival advantage to clones with the Y664F transgene. Table 4 below shows the number of unique clones with 
+integrations within ARID1A and their maximum abundance while Figure 12 shows the integration positions within 
+ARID1A's transcription unit. Fisher's exact tests do not find a significant difference between the proportions of clones 
+with maximal abundances < 25 and $\geq$ 25 cells which suggests that integration within ARID1A and higher 
+clonal abundances are not dependent on the transgene though there is a trend toward higher abundances with 
+the Y664F transgene.  
+
+\vspace{0.50cm}
+
+\small
+Table 4. Unique clones with integrations within ARID1A separated by transgene and maximum observed abundance.  
+\normalsize
+
+```{r, echo = FALSE, fig.align='center'}
+o <- subset(report$intSites.maxEstAbund, nearestFeature == 'ARID1A' & patient %in% c('pNA92', 'pNA93', 'pNA85', 'pNA92_Y664F', 'pNA93_Y664F', 'pNA85_Y664F'))
+abundThreshold <- 25
+m <- matrix(c(n_distinct(subset(o, genotype == 'WT' & estAbund < abundThreshold)$posid),
+         n_distinct(subset(o, genotype == 'WT' & estAbund >= abundThreshold)$posid),
+         n_distinct(subset(o, genotype == 'Y664F' & estAbund < abundThreshold)$posid),
+         n_distinct(subset(o, genotype == 'Y664F' & estAbund >= abundThreshold)$posid)),
+       byrow = TRUE, nrow = 2)
+row.names(m) <- c('WT', 'Y664F')
+colnames(m) <- c(paste0('Abund < ', abundThreshold), paste0('Abund >= ', abundThreshold))
+kable(m, "latex",  row.names = T, booktabs = T, linesep = '', align = 'cc') %>% kable_styling(position = "center")
+```
+
+\vspace{0.5cm}
+\small
+Figure 12. Schematic of ARID1A where exons are shown as gray bars and clones are shown by data points denoting both their integration position and maximum abundance. 
+\normalsize
+
+
+
+```{r, echo=FALSE, fig.align='center', fig.height=5}
+geneOfInterest <- 'ARID1A'
+s <- subset(inSite::hg38.refSeqGenesGRanges, name2 == geneOfInterest)[1]
+
+exons <- unlist(GRangesList(lapply(s, function(x){
+  GenomicRanges::GRanges(seqnames = seqnames(s)[1],
+          strand   = as.character(strand(x)[1]),
+          ranges   = IRanges(start = as.integer(unlist(strsplit(x$exonStarts, ','))),
+                             end   = as.integer(unlist(strsplit(x$exonEnds, ',')))),
+          name     = paste0('exon ', seq_along(unlist(strsplit(x$exonStarts, ',')))))
+})))
+
+
+sites <- subset(report$intSites, nearestFeature == geneOfInterest & patient %in% c('pNA92', 'pNA93', 'pNA85', 'pNA92_Y664F', 'pNA93_Y664F', 'pNA85_Y664F'))
+
+
+exons.red <- GenomicRanges::reduce(exons, min.gapwidth=0L, with.revmap=TRUE)
+sites.red <- GenomicRanges::reduce(sites, min.gapwidth=0L, with.revmap=TRUE)
+
+sites.red$maxAbund <- unlist(lapply(sites.red$revmap, function(x){
+  max(sites[x]$estAbund)
+}))
+
+sites.red$patient <- unlist(lapply(sites.red$revmap, function(x){
+  paste0(unique(sites[x]$patient), collapse = ',')
+}))
+
+sites.red$ort <- ifelse(as.character(strand(sites.red)) == unique(as.character(strand(s))), 'Same gene orientation', 'Opposite gene orientation')
+
+sites.red$patientType <- ifelse(grepl('Y664F', sites.red$patient), 'Y664F', 'WT')
+
+sites.red$revmap <- NULL
+
+minRangeWidth=100
+a <- unlist(GRangesList(lapply(exons.red[width(exons.red) < minRangeWidth], function(x){
+              start(x) <- start(x) - (minRangeWidth - width(x) / 2)
+              end(x)   <- end(x) + (minRangeWidth - width(x) / 2)
+              x
+             })))
+b <- exons.red[width(exons.red) >= minRangeWidth]
+exons.red <- c(a, b)
+
+e <- as.data.frame(exons.red)
+s <- as.data.frame(sites.red)
+s$ort <- factor(s$ort)
+
+e$Ymin <- 0
+e$Ymax <- max(s$maxAbund)
+colors <- c(brewer.pal(n = 6, name = "Paired"), 'black')
+ggplot() +
+  theme_bw() +
+  scale_shape_manual(values = c(21, 24), name='Genotype') +
+  scale_fill_manual(values=colors, name='Subject') +
+  geom_rect(data=e, fill='gray', mapping=aes(xmin=start, xmax=end, ymin=Ymin, ymax=Ymax)) +
+  geom_point(data=s, size=3, aes(x=start, y=maxAbund, shape=patientType, fill=patient)) +
+  guides(fill = guide_legend(override.aes = list(color = colors))) +
+  labs(x='Genomic position', y='Max abundance')
+
+  
+ 
+```
+
+
+
+
+\newpage
+Figure 11a. Bivariate nearest gene frequency plot for clones with the Y664F transgene.  
+\normalsize
+\vspace{0.25cm}
+```{r, fig.height=4.5, echo = FALSE, fig.align='center'}
+report$preVspostFreqplot.Y664F
+```
+\vspace{0.5cm}
+\small
+Figure 11b. Bivariate nearest gene frequency plot for clones with the WT transgene.  
+\normalsize
+```{r, fig.height=4.5, echo = FALSE, fig.align='center'}
+report$preVspostFreqplot.WT
+```
+
+
+\newpage
+
+
+
+## Supplemental
+
+\vspace{0.5cm}
+
+```{r, echo=FALSE, results='asis', fig.height=10, out.height='10in'}
+KEGG.schematics <- data.frame(file = list.files('KEGG.schematics', pattern = 'WT_D9_vs_KD_D9'))
+KEGG.schematics$term <- unlist(lapply(stringr::str_match_all(KEGG.schematics$file, 'hsa(\\d+)'), '[', 2))
+KEGG.schematics$desc <- report$WT_D9_vs_KD_D9.KEGG[match(KEGG.schematics$term, report$WT_D9_vs_KD_D9.KEGG$term_id),]$term_description
+KEGG.schematics <- KEGG.schematics[match(report$WT_D9_vs_KD_D9.KEGG$term_id, KEGG.schematics$term),][1:10,]
+
+letters_n <- 1
+image_n <- 0 
+invisible(sapply(KEGG.schematics$term, function(term){
+  file <- paste0('KEGG.schematics/', KEGG.schematics[match(term, KEGG.schematics$term),]$file)
+  cat(paste0('Figure S1', letters[letters_n], '. KEGG pathway: ', term, '\n'))
+  cat(paste0(KEGG.schematics[match(term, KEGG.schematics$term),]$desc, '\n\n\n'))
+  
+  cat('\\vspace{0.25cm}\n')
+  
+  letters_n <<- letters_n + 1
+  cat(paste0('![](', file, ')\n'))
+  cat('\\vspace{1.0cm}\n\n')
+  image_n <<- image_n + 1
+  if(image_n == 2){
+    image_n <<- 0
+    cat('\\newpage\n')
+  }
+}))
+
+```
+
+\newpage
+
+\small
+Table S1. Enriched pathways from the day 9 WT vs KD RNAseq comparison.
+\normalsize
+```{r, echo=FALSE}
+t <- report$WT_D9_vs_KD_D9.KEGG[c(2,3,5,6,8)]
+t <- t %>% dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3))))
+kable(t, "latex",  row.names = F, booktabs = T, linesep = '', align = 'cclll', longtable = T) %>% 
+  kable_styling(latex_options = c("striped", "repeat_header"), font_size = 8) %>% 
+  column_spec(1, width = "3em") %>% 
+  column_spec(2, width = "2em") %>% 
+  column_spec(3, width = "7em") %>% 
+  column_spec(4, width = "10em") %>% 
+  column_spec(5, width = "40em")
+```
+
+\newpage
+
+\small
+Table S2a. Type 2 clone enriched KEGG pathways.
+\normalsize
+\vspace{0.25cm}
+```{r, echo=FALSE}
+t <- report$type2.KEGG[,c(2,3,5,6)]
+t <- t %>% dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3))))
+kable(t, "latex",  row.names = F, booktabs = T, linesep = '', align = 'ccccc', longtable = T) %>% 
+  kable_styling(latex_options = c("striped", "repeat_header"), font_size = 10) 
+```
+
+\newpage
+
+\small
+Table S2b. Class 3 clone enriched KEGG pathways.
+\normalsize
+\vspace{0.25cm}
+```{r, echo=FALSE}
+t <- report$type3.KEGG[,c(2,3,5,6)]
+t <- t %>% dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3))))
+kable(t, "latex",  row.names = F, booktabs = T, linesep = '', align = 'cclll') %>% 
+  kable_styling(latex_options = c("striped"), font_size = 10) 
+```
+
+\small
+Table S2c. Class 4 clones enriched KEGG pathways.
+\normalsize
+\vspace{0.25cm}
+```{r, echo=FALSE}
+t <- report$type4.KEGG[,c(2,3,5,6)]
+t <- t %>% dplyr::mutate_if(is.numeric, funs(as.character(signif(., 3))))
+kable(t, "latex",  row.names = F, booktabs = T, linesep = '', align = 'cclll') %>% 
+  kable_styling(latex_options = "striped", font_size = 10) 
+```
+
+\newpage
+
+\small
+Table S3a. Class 4 clones.
+\normalsize
+\vspace{0.25cm} 
+```{r, echo=FALSE}
+kable(report$type4_clones, "latex",  row.names = F, booktabs = T, linesep = '') %>% 
+  kable_styling(latex_options = "striped", font_size = 10) 
+```
+
+\vspace{1.0cm}
+
+\small
+Table S3b. Class 3 clones.
+\normalsize
+\vspace{0.25cm} 
+```{r, echo=FALSE}
+kable(report$type3_clones, "latex",  row.names = F, booktabs = T, linesep = '') %>% 
+  kable_styling(latex_options = "striped", font_size = 10) 
+```
+
+\newpage
+
+\small
+Table S3c. Class 2 clones.
+\normalsize
+\vspace{0.25cm} 
+```{r, echo=FALSE}
+kable(report$type2_clones, "latex",  row.names = F, booktabs = T, linesep = '', longtable = TRUE) %>% 
+   kable_styling(latex_options = c("striped", "repeat_header"), font_size = 10) 
+```
+
+\

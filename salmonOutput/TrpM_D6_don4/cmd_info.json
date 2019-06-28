@@ -1,0 +1,9 @@
+{
+    "salmon_version": "0.11.3",
+    "threads": "8",
+    "index": "/home/everett/data/sequenceDatabases/Salmon/GRCh38.gencode29/",
+    "libType": "A",
+    "unmatedReads": "data/RNAseq_data2/CL100021371_L01_27.fq.gz",
+    "output": "salmonOutput/TrpM_D6_don4",
+    "auxDir": "aux_info"
+}

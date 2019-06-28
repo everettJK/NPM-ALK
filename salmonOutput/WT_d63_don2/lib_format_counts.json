@@ -1,0 +1,21 @@
+{
+    "read_files": "[ data/RNAseq_data1/US-10016554.HKRDHUMjqiEAAERAAPEI-207.HGTMGBBXX_1.1.fq.gz, data/RNAseq_data1/US-10016554.HKRDHUMjqiEAAERAAPEI-207.HGTMGBBXX_1.2.fq.gz]",
+    "expected_format": "ISR",
+    "compatible_fragment_ratio": 1.0,
+    "num_compatible_fragments": 24709378,
+    "num_assigned_fragments": 24709378,
+    "num_frags_with_consistent_mappings": 22092314,
+    "num_frags_with_inconsistent_or_orphan_mappings": 2617456,
+    "MSF": 0,
+    "OSF": 0,
+    "ISF": 397,
+    "MSR": 0,
+    "OSR": 0,
+    "ISR": 22092314,
+    "SF": 1268327,
+    "SR": 1348732,
+    "MU": 0,
+    "OU": 0,
+    "IU": 0,
+    "U": 0
+}

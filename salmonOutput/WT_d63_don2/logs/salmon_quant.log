@@ -1,0 +1,53 @@
+[2019-03-18 17:55:02.753] [jointLog] [info] Fragment incompatibility prior below threshold.  Incompatible fragments will be ignored.
+[2019-03-18 17:55:02.753] [jointLog] [info] parsing read library format
+[2019-03-18 17:55:02.753] [jointLog] [info] There is 1 library.
+[2019-03-18 17:55:02.823] [jointLog] [info] Loading Quasi index
+[2019-03-18 17:55:02.823] [jointLog] [info] Loading 32-bit quasi index
+[2019-03-18 17:55:10.315] [jointLog] [info] done
+[2019-03-18 17:55:10.315] [jointLog] [info] Index contained 205,870 targets
+[2019-03-18 17:55:10.787] [jointLog] [info] Automatically detected most likely library type as ISR
+[2019-03-18 17:56:35.645] [jointLog] [info] Thread saw mini-batch with a maximum of 3.44% zero probability fragments
+[2019-03-18 17:56:35.654] [jointLog] [info] Thread saw mini-batch with a maximum of 3.30% zero probability fragments
+[2019-03-18 17:56:35.662] [jointLog] [info] Thread saw mini-batch with a maximum of 3.42% zero probability fragments
+[2019-03-18 17:56:35.668] [jointLog] [info] Thread saw mini-batch with a maximum of 3.46% zero probability fragments
+[2019-03-18 17:56:35.671] [jointLog] [info] Thread saw mini-batch with a maximum of 3.24% zero probability fragments
+[2019-03-18 17:56:35.680] [jointLog] [info] Thread saw mini-batch with a maximum of 3.50% zero probability fragments
+[2019-03-18 17:56:35.690] [jointLog] [info] Thread saw mini-batch with a maximum of 3.52% zero probability fragments
+[2019-03-18 17:56:35.698] [jointLog] [info] Thread saw mini-batch with a maximum of 3.24% zero probability fragments
+[2019-03-18 17:56:36.001] [jointLog] [info] Computed 413,391 rich equivalence classes for further processing
+[2019-03-18 17:56:36.001] [jointLog] [info] Counted 24,709,378 total reads in the equivalence classes 
+[2019-03-18 17:56:36.009] [jointLog] [warning] 0.00149127% of fragments were shorter than the k used to build the index (31).
+If this fraction is too large, consider re-building the index with a smaller k.
+The minimum read size found was 29.
+
+
+[2019-03-18 17:56:36.009] [jointLog] [info] Mapping rate = 53.0957%
+
+[2019-03-18 17:56:36.009] [jointLog] [info] finished quantifyLibrary()
+[2019-03-18 17:56:36.009] [jointLog] [info] Starting optimizer
+[2019-03-18 17:56:36.149] [jointLog] [info] Marked 0 weighted equivalence classes as degenerate
+[2019-03-18 17:56:36.167] [jointLog] [info] iteration = 0 | max rel diff. = 6024.13
+[2019-03-18 17:56:36.002] [fileLog] [info] 
+At end of round 0
+==================
+Observed 46537479 total fragments (46537479 in most recent round)
+
+[2019-03-18 17:56:37.963] [jointLog] [info] iteration = 100 | max rel diff. = 18.2819
+[2019-03-18 17:56:39.762] [jointLog] [info] iteration = 200 | max rel diff. = 14.4523
+[2019-03-18 17:56:41.554] [jointLog] [info] iteration = 300 | max rel diff. = 13.21
+[2019-03-18 17:56:43.366] [jointLog] [info] iteration = 400 | max rel diff. = 12.1623
+[2019-03-18 17:56:45.163] [jointLog] [info] iteration = 500 | max rel diff. = 20.8033
+[2019-03-18 17:56:46.968] [jointLog] [info] iteration = 600 | max rel diff. = 0.271586
+[2019-03-18 17:56:48.772] [jointLog] [info] iteration = 700 | max rel diff. = 0.294914
+[2019-03-18 17:56:50.555] [jointLog] [info] iteration = 800 | max rel diff. = 0.631626
+[2019-03-18 17:56:52.351] [jointLog] [info] iteration = 900 | max rel diff. = 2.33223
+[2019-03-18 17:56:54.145] [jointLog] [info] iteration = 1,000 | max rel diff. = 0.539241
+[2019-03-18 17:56:55.945] [jointLog] [info] iteration = 1,100 | max rel diff. = 0.149805
+[2019-03-18 17:56:57.737] [jointLog] [info] iteration = 1,200 | max rel diff. = 0.861376
+[2019-03-18 17:56:59.506] [jointLog] [info] iteration = 1,300 | max rel diff. = 0.0159765
+[2019-03-18 17:57:01.290] [jointLog] [info] iteration = 1,400 | max rel diff. = 5.38893
+[2019-03-18 17:57:03.070] [jointLog] [info] iteration = 1,500 | max rel diff. = 0.036153
+[2019-03-18 17:57:03.804] [jointLog] [info] iteration = 1,542 | max rel diff. = 0.00943216
+[2019-03-18 17:57:03.818] [jointLog] [info] Finished optimizer
+[2019-03-18 17:57:03.818] [jointLog] [info] writing output 
+

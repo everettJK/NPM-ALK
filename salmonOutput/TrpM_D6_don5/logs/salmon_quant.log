@@ -1,0 +1,49 @@
+[2019-03-18 21:32:22.475] [jointLog] [info] Fragment incompatibility prior below threshold.  Incompatible fragments will be ignored.
+[2019-03-18 21:32:22.475] [jointLog] [info] parsing read library format
+[2019-03-18 21:32:22.475] [jointLog] [info] There is 1 library.
+[2019-03-18 21:32:22.559] [jointLog] [info] Loading Quasi index
+[2019-03-18 21:32:22.559] [jointLog] [info] Loading 32-bit quasi index
+[2019-03-18 21:32:32.345] [jointLog] [info] done
+[2019-03-18 21:32:32.345] [jointLog] [info] Index contained 205,870 targets
+[2019-03-18 21:32:32.767] [jointLog] [info] Automatically detected most likely library type as U
+[2019-03-18 21:33:57.932] [jointLog] [info] Computed 365,271 rich equivalence classes for further processing
+[2019-03-18 21:33:57.932] [jointLog] [info] Counted 51,149,748 total reads in the equivalence classes 
+[2019-03-18 21:33:57.941] [jointLog] [info] Mapping rate = 90.8942%
+
+[2019-03-18 21:33:57.941] [jointLog] [info] finished quantifyLibrary()
+[2019-03-18 21:33:57.942] [jointLog] [info] Starting optimizer
+[2019-03-18 21:33:58.100] [jointLog] [info] Marked 0 weighted equivalence classes as degenerate
+[2019-03-18 21:33:58.122] [jointLog] [info] iteration = 0 | max rel diff. = 5825.79
+[2019-03-18 21:33:57.932] [fileLog] [info] 
+At end of round 0
+==================
+Observed 56273964 total fragments (56273964 in most recent round)
+
+[2019-03-18 21:34:00.306] [jointLog] [info] iteration = 100 | max rel diff. = 19.3288
+[2019-03-18 21:34:02.443] [jointLog] [info] iteration = 200 | max rel diff. = 10.6297
+[2019-03-18 21:34:04.632] [jointLog] [info] iteration = 300 | max rel diff. = 15.0342
+[2019-03-18 21:34:06.817] [jointLog] [info] iteration = 400 | max rel diff. = 8.43022
+[2019-03-18 21:34:08.761] [jointLog] [info] iteration = 500 | max rel diff. = 4.36242
+[2019-03-18 21:34:10.654] [jointLog] [info] iteration = 600 | max rel diff. = 3.31749
+[2019-03-18 21:34:12.470] [jointLog] [info] iteration = 700 | max rel diff. = 0.165335
+[2019-03-18 21:34:14.504] [jointLog] [info] iteration = 800 | max rel diff. = 0.648295
+[2019-03-18 21:34:16.545] [jointLog] [info] iteration = 900 | max rel diff. = 6.15393
+[2019-03-18 21:34:18.520] [jointLog] [info] iteration = 1,000 | max rel diff. = 2.24643
+[2019-03-18 21:34:20.560] [jointLog] [info] iteration = 1,100 | max rel diff. = 0.688849
+[2019-03-18 21:34:22.532] [jointLog] [info] iteration = 1,200 | max rel diff. = 0.27337
+[2019-03-18 21:34:24.670] [jointLog] [info] iteration = 1,300 | max rel diff. = 0.0506801
+[2019-03-18 21:34:26.866] [jointLog] [info] iteration = 1,400 | max rel diff. = 0.303175
+[2019-03-18 21:34:28.958] [jointLog] [info] iteration = 1,500 | max rel diff. = 0.0903794
+[2019-03-18 21:34:31.049] [jointLog] [info] iteration = 1,600 | max rel diff. = 0.116063
+[2019-03-18 21:34:33.184] [jointLog] [info] iteration = 1,700 | max rel diff. = 0.0571078
+[2019-03-18 21:34:35.296] [jointLog] [info] iteration = 1,800 | max rel diff. = 0.133688
+[2019-03-18 21:34:37.156] [jointLog] [info] iteration = 1,900 | max rel diff. = 1.38365
+[2019-03-18 21:34:39.139] [jointLog] [info] iteration = 2,000 | max rel diff. = 0.350719
+[2019-03-18 21:34:39.209] [jointLog] [info] iteration = 2,005 | max rel diff. = 0.00674516
+[2019-03-18 21:34:39.225] [jointLog] [info] Finished optimizer
+[2019-03-18 21:34:39.225] [jointLog] [info] writing output 
+
+[2019-03-18 21:34:39.607] [jointLog] [warning] NOTE: Read Lib [[ data/RNAseq_data2/CL100021371_L01_33.fq.gz ]] :
+
+Detected a *potential* strand bias > 1% in an unstranded protocol check the file: salmonOutput/TrpM_D6_don5/lib_format_counts.json for details
+

@@ -1,0 +1,9 @@
+{
+    "salmon_version": "0.9.1",
+    "threads": "8",
+    "index": "/home/jtobias/GRCh38.p12/gencode28/salmonIndex/",
+    "libType": "A",
+    "unmatedReads": "/home/jtobias/jp201805/fastq/CL100021371_L02_42.fq.gz",
+    "output": "/home/jtobias/jp201805/salmon/TrpM_D9_6",
+    "auxDir": "aux_info"
+}

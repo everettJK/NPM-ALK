@@ -1,0 +1,55 @@
+[2018-11-14 16:11:54.329] [jointLog] [info] Fragment incompatibility prior below threshold.  Incompatible fragments will be ignored.
+[2018-11-14 16:11:54.329] [jointLog] [info] parsing read library format
+[2018-11-14 16:11:54.329] [jointLog] [info] There is 1 library.
+[2018-11-14 16:11:54.407] [jointLog] [info] Loading Quasi index
+[2018-11-14 16:11:54.407] [jointLog] [info] Loading 32-bit quasi index
+[2018-11-14 16:12:02.814] [jointLog] [info] done
+[2018-11-14 16:12:02.814] [jointLog] [info] Index contained 205,870 targets
+[2018-11-14 16:12:03.206] [jointLog] [info] Automatically detected most likely library type as U
+[2018-11-14 16:13:27.850] [jointLog] [info] Computed 384,757 rich equivalence classes for further processing
+[2018-11-14 16:13:27.850] [jointLog] [info] Counted 65,395,426 total reads in the equivalence classes 
+[2018-11-14 16:13:27.860] [jointLog] [info] Mapping rate = 91.1552%
+
+[2018-11-14 16:13:27.860] [jointLog] [info] finished quantifyLibrary()
+[2018-11-14 16:13:27.860] [jointLog] [info] Starting optimizer
+[2018-11-14 16:13:27.850] [fileLog] [info] 
+At end of round 0
+==================
+Observed 71740717 total fragments (71740717 in most recent round)
+
+[2018-11-14 16:13:36.545] [jointLog] [info] Marked 0 weighted equivalence classes as degenerate
+[2018-11-14 16:13:36.562] [jointLog] [info] iteration = 0 | max rel diff. = 3556.36
+[2018-11-14 16:13:38.352] [jointLog] [info] iteration = 100 | max rel diff. = 18.8127
+[2018-11-14 16:13:40.150] [jointLog] [info] iteration = 200 | max rel diff. = 17.7986
+[2018-11-14 16:13:41.945] [jointLog] [info] iteration = 300 | max rel diff. = 12.9726
+[2018-11-14 16:13:43.749] [jointLog] [info] iteration = 400 | max rel diff. = 13.1738
+[2018-11-14 16:13:45.548] [jointLog] [info] iteration = 500 | max rel diff. = 13.3311
+[2018-11-14 16:13:47.378] [jointLog] [info] iteration = 600 | max rel diff. = 5.92223
+[2018-11-14 16:13:49.171] [jointLog] [info] iteration = 700 | max rel diff. = 6.1038
+[2018-11-14 16:13:50.975] [jointLog] [info] iteration = 800 | max rel diff. = 0.423824
+[2018-11-14 16:13:52.805] [jointLog] [info] iteration = 900 | max rel diff. = 6.45812
+[2018-11-14 16:13:54.895] [jointLog] [info] iteration = 1,000 | max rel diff. = 0.940004
+[2018-11-14 16:13:57.125] [jointLog] [info] iteration = 1,100 | max rel diff. = 16.9042
+[2018-11-14 16:13:59.351] [jointLog] [info] iteration = 1,200 | max rel diff. = 0.0884985
+[2018-11-14 16:14:01.156] [jointLog] [info] iteration = 1,300 | max rel diff. = 0.144052
+[2018-11-14 16:14:02.961] [jointLog] [info] iteration = 1,400 | max rel diff. = 0.180026
+[2018-11-14 16:14:05.066] [jointLog] [info] iteration = 1,500 | max rel diff. = 0.182369
+[2018-11-14 16:14:06.963] [jointLog] [info] iteration = 1,600 | max rel diff. = 5.98693
+[2018-11-14 16:14:08.758] [jointLog] [info] iteration = 1,700 | max rel diff. = 0.931741
+[2018-11-14 16:14:10.559] [jointLog] [info] iteration = 1,800 | max rel diff. = 0.039878
+[2018-11-14 16:14:12.351] [jointLog] [info] iteration = 1,900 | max rel diff. = 0.147661
+[2018-11-14 16:14:14.167] [jointLog] [info] iteration = 2,000 | max rel diff. = 0.0912271
+[2018-11-14 16:14:15.964] [jointLog] [info] iteration = 2,100 | max rel diff. = 0.069858
+[2018-11-14 16:14:17.777] [jointLog] [info] iteration = 2,200 | max rel diff. = 0.0177792
+[2018-11-14 16:14:19.581] [jointLog] [info] iteration = 2,300 | max rel diff. = 0.273133
+[2018-11-14 16:14:21.373] [jointLog] [info] iteration = 2,400 | max rel diff. = 0.096697
+[2018-11-14 16:14:23.172] [jointLog] [info] iteration = 2,500 | max rel diff. = 0.113833
+[2018-11-14 16:14:24.963] [jointLog] [info] iteration = 2,600 | max rel diff. = 0.0272965
+[2018-11-14 16:14:26.463] [jointLog] [info] iteration = 2,683 | max rel diff. = 0.00962177
+[2018-11-14 16:14:26.478] [jointLog] [info] Finished optimizer
+[2018-11-14 16:14:26.478] [jointLog] [info] writing output 
+
+[2018-11-14 16:14:26.864] [jointLog] [warning] NOTE: Read Lib [[ sequencingData/CL100021371_L01_39.fq.gz ]] :
+
+Detected a *potential* strand bias > 1% in an unstranded protocol check the file: salmonOutput/TrpM_D6_6/lib_format_counts.json for details
+

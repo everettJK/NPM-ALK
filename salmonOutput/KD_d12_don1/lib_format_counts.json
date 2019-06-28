@@ -1,0 +1,21 @@
+{
+    "read_files": "[ data/RNAseq_data1/US-10000552.AAMRHmP213H1AAAPEI-8.H7VTKBBXX_3.1.fq.gz, data/RNAseq_data1/US-10000552.AAMRHmP213H1AAAPEI-8.H7VTKBBXX_3.2.fq.gz]",
+    "expected_format": "ISR",
+    "compatible_fragment_ratio": 1.0,
+    "num_compatible_fragments": 32070784,
+    "num_assigned_fragments": 32070784,
+    "num_frags_with_consistent_mappings": 28634553,
+    "num_frags_with_inconsistent_or_orphan_mappings": 3436586,
+    "MSF": 0,
+    "OSF": 0,
+    "ISF": 377,
+    "MSR": 0,
+    "OSR": 0,
+    "ISR": 28634553,
+    "SF": 1662556,
+    "SR": 1773653,
+    "MU": 0,
+    "OU": 0,
+    "IU": 0,
+    "U": 0
+}

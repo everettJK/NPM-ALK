@@ -1,0 +1,54 @@
+[2019-03-18 21:45:38.085] [jointLog] [info] Fragment incompatibility prior below threshold.  Incompatible fragments will be ignored.
+[2019-03-18 21:45:38.085] [jointLog] [info] parsing read library format
+[2019-03-18 21:45:38.085] [jointLog] [info] There is 1 library.
+[2019-03-18 21:45:38.179] [jointLog] [info] Loading Quasi index
+[2019-03-18 21:45:38.179] [jointLog] [info] Loading 32-bit quasi index
+[2019-03-18 21:45:47.471] [jointLog] [info] done
+[2019-03-18 21:45:47.471] [jointLog] [info] Index contained 205,870 targets
+[2019-03-18 21:45:48.034] [jointLog] [info] Automatically detected most likely library type as U
+[2019-03-18 21:47:35.297] [fileLog] [info] 
+At end of round 0
+==================
+Observed 71740717 total fragments (71740717 in most recent round)
+
+[2019-03-18 21:47:35.296] [jointLog] [info] Computed 384,757 rich equivalence classes for further processing
+[2019-03-18 21:47:35.296] [jointLog] [info] Counted 65,395,426 total reads in the equivalence classes 
+[2019-03-18 21:47:35.309] [jointLog] [info] Mapping rate = 91.1552%
+
+[2019-03-18 21:47:35.309] [jointLog] [info] finished quantifyLibrary()
+[2019-03-18 21:47:35.310] [jointLog] [info] Starting optimizer
+[2019-03-18 21:47:49.045] [jointLog] [info] Marked 0 weighted equivalence classes as degenerate
+[2019-03-18 21:47:49.069] [jointLog] [info] iteration = 0 | max rel diff. = 3556.43
+[2019-03-18 21:47:51.373] [jointLog] [info] iteration = 100 | max rel diff. = 16.6947
+[2019-03-18 21:47:53.298] [jointLog] [info] iteration = 200 | max rel diff. = 20.1601
+[2019-03-18 21:47:55.325] [jointLog] [info] iteration = 300 | max rel diff. = 19.0781
+[2019-03-18 21:47:57.513] [jointLog] [info] iteration = 400 | max rel diff. = 9.11913
+[2019-03-18 21:47:59.501] [jointLog] [info] iteration = 500 | max rel diff. = 9.41153
+[2019-03-18 21:48:01.570] [jointLog] [info] iteration = 600 | max rel diff. = 5.78573
+[2019-03-18 21:48:03.656] [jointLog] [info] iteration = 700 | max rel diff. = 4.29044
+[2019-03-18 21:48:05.804] [jointLog] [info] iteration = 800 | max rel diff. = 0.582533
+[2019-03-18 21:48:08.075] [jointLog] [info] iteration = 900 | max rel diff. = 2.21564
+[2019-03-18 21:48:10.289] [jointLog] [info] iteration = 1,000 | max rel diff. = 0.286321
+[2019-03-18 21:48:12.539] [jointLog] [info] iteration = 1,100 | max rel diff. = 0.461593
+[2019-03-18 21:48:14.872] [jointLog] [info] iteration = 1,200 | max rel diff. = 0.109121
+[2019-03-18 21:48:17.059] [jointLog] [info] iteration = 1,300 | max rel diff. = 0.149967
+[2019-03-18 21:48:19.282] [jointLog] [info] iteration = 1,400 | max rel diff. = 0.174118
+[2019-03-18 21:48:21.517] [jointLog] [info] iteration = 1,500 | max rel diff. = 0.0481215
+[2019-03-18 21:48:23.766] [jointLog] [info] iteration = 1,600 | max rel diff. = 1.12848
+[2019-03-18 21:48:25.991] [jointLog] [info] iteration = 1,700 | max rel diff. = 0.288419
+[2019-03-18 21:48:28.134] [jointLog] [info] iteration = 1,800 | max rel diff. = 8.44936
+[2019-03-18 21:48:30.329] [jointLog] [info] iteration = 1,900 | max rel diff. = 0.155399
+[2019-03-18 21:48:32.568] [jointLog] [info] iteration = 2,000 | max rel diff. = 0.440919
+[2019-03-18 21:48:34.811] [jointLog] [info] iteration = 2,100 | max rel diff. = 0.0846366
+[2019-03-18 21:48:36.898] [jointLog] [info] iteration = 2,200 | max rel diff. = 2.52643
+[2019-03-18 21:48:38.905] [jointLog] [info] iteration = 2,300 | max rel diff. = 0.0370543
+[2019-03-18 21:48:41.016] [jointLog] [info] iteration = 2,400 | max rel diff. = 0.573453
+[2019-03-18 21:48:43.047] [jointLog] [info] iteration = 2,500 | max rel diff. = 0.243278
+[2019-03-18 21:48:43.978] [jointLog] [info] iteration = 2,544 | max rel diff. = 0.00991577
+[2019-03-18 21:48:43.995] [jointLog] [info] Finished optimizer
+[2019-03-18 21:48:43.995] [jointLog] [info] writing output 
+
+[2019-03-18 21:48:44.396] [jointLog] [warning] NOTE: Read Lib [[ data/RNAseq_data2/CL100021371_L01_39.fq.gz ]] :
+
+Detected a *potential* strand bias > 1% in an unstranded protocol check the file: salmonOutput/TrpM_D6_don6/lib_format_counts.json for details
+

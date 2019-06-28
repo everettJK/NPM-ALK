@@ -1,0 +1,58 @@
+[2019-03-18 17:42:12.399] [jointLog] [info] Fragment incompatibility prior below threshold.  Incompatible fragments will be ignored.
+[2019-03-18 17:42:12.399] [jointLog] [info] parsing read library format
+[2019-03-18 17:42:12.399] [jointLog] [info] There is 1 library.
+[2019-03-18 17:42:12.471] [jointLog] [info] Loading Quasi index
+[2019-03-18 17:42:12.471] [jointLog] [info] Loading 32-bit quasi index
+[2019-03-18 17:42:19.956] [jointLog] [info] done
+[2019-03-18 17:42:19.956] [jointLog] [info] Index contained 205,870 targets
+[2019-03-18 17:42:20.393] [jointLog] [info] Automatically detected most likely library type as ISR
+[2019-03-18 17:44:01.459] [jointLog] [info] Thread saw mini-batch with a maximum of 5.54% zero probability fragments
+[2019-03-18 17:44:01.466] [jointLog] [info] Thread saw mini-batch with a maximum of 5.78% zero probability fragments
+[2019-03-18 17:44:01.468] [jointLog] [info] Thread saw mini-batch with a maximum of 5.64% zero probability fragments
+[2019-03-18 17:44:01.478] [jointLog] [info] Thread saw mini-batch with a maximum of 5.62% zero probability fragments
+[2019-03-18 17:44:01.487] [jointLog] [info] Thread saw mini-batch with a maximum of 5.70% zero probability fragments
+[2019-03-18 17:44:01.497] [jointLog] [info] Thread saw mini-batch with a maximum of 5.50% zero probability fragments
+[2019-03-18 17:44:01.508] [jointLog] [info] Thread saw mini-batch with a maximum of 5.46% zero probability fragments
+[2019-03-18 17:44:01.516] [jointLog] [info] Thread saw mini-batch with a maximum of 5.84% zero probability fragments
+[2019-03-18 17:44:01.808] [fileLog] [info] 
+At end of round 0
+==================
+Observed 52140831 total fragments (52140831 in most recent round)
+
+[2019-03-18 17:44:01.807] [jointLog] [info] Computed 357,131 rich equivalence classes for further processing
+[2019-03-18 17:44:01.807] [jointLog] [info] Counted 32,447,887 total reads in the equivalence classes 
+[2019-03-18 17:44:01.815] [jointLog] [warning] 0.254931% of fragments were shorter than the k used to build the index (31).
+If this fraction is too large, consider re-building the index with a smaller k.
+The minimum read size found was 24.
+
+
+[2019-03-18 17:44:01.815] [jointLog] [info] Mapping rate = 62.2312%
+
+[2019-03-18 17:44:01.815] [jointLog] [info] finished quantifyLibrary()
+[2019-03-18 17:44:01.815] [jointLog] [info] Starting optimizer
+[2019-03-18 17:44:09.850] [jointLog] [info] Marked 0 weighted equivalence classes as degenerate
+[2019-03-18 17:44:09.867] [jointLog] [info] iteration = 0 | max rel diff. = 5633.09
+[2019-03-18 17:44:11.494] [jointLog] [info] iteration = 100 | max rel diff. = 12.853
+[2019-03-18 17:44:13.136] [jointLog] [info] iteration = 200 | max rel diff. = 5.11062
+[2019-03-18 17:44:14.793] [jointLog] [info] iteration = 300 | max rel diff. = 1.62789
+[2019-03-18 17:44:16.421] [jointLog] [info] iteration = 400 | max rel diff. = 5.60342
+[2019-03-18 17:44:18.044] [jointLog] [info] iteration = 500 | max rel diff. = 1.20569
+[2019-03-18 17:44:19.668] [jointLog] [info] iteration = 600 | max rel diff. = 2.6991
+[2019-03-18 17:44:21.318] [jointLog] [info] iteration = 700 | max rel diff. = 0.403292
+[2019-03-18 17:44:22.942] [jointLog] [info] iteration = 800 | max rel diff. = 0.961384
+[2019-03-18 17:44:24.587] [jointLog] [info] iteration = 900 | max rel diff. = 1.94084
+[2019-03-18 17:44:26.221] [jointLog] [info] iteration = 1,000 | max rel diff. = 0.131226
+[2019-03-18 17:44:27.853] [jointLog] [info] iteration = 1,100 | max rel diff. = 0.517044
+[2019-03-18 17:44:29.501] [jointLog] [info] iteration = 1,200 | max rel diff. = 0.224983
+[2019-03-18 17:44:31.131] [jointLog] [info] iteration = 1,300 | max rel diff. = 0.423536
+[2019-03-18 17:44:32.772] [jointLog] [info] iteration = 1,400 | max rel diff. = 0.162625
+[2019-03-18 17:44:34.405] [jointLog] [info] iteration = 1,500 | max rel diff. = 0.0704805
+[2019-03-18 17:44:36.035] [jointLog] [info] iteration = 1,600 | max rel diff. = 0.040924
+[2019-03-18 17:44:37.656] [jointLog] [info] iteration = 1,700 | max rel diff. = 0.0752626
+[2019-03-18 17:44:39.285] [jointLog] [info] iteration = 1,800 | max rel diff. = 0.080057
+[2019-03-18 17:44:40.902] [jointLog] [info] iteration = 1,900 | max rel diff. = 0.211458
+[2019-03-18 17:44:42.537] [jointLog] [info] iteration = 2,000 | max rel diff. = 0.0462993
+[2019-03-18 17:44:42.910] [jointLog] [info] iteration = 2,024 | max rel diff. = 0.00813195
+[2019-03-18 17:44:42.924] [jointLog] [info] Finished optimizer
+[2019-03-18 17:44:42.924] [jointLog] [info] writing output 
+

@@ -1,0 +1,1 @@
+/home/everett/software/salmon-0.11.3/bin/salmon quant -p8 -i /home/everett/data/sequenceDatabases/Salmon/GRCh38.gencode29/ -o salonOutput -l A -1 RNAseq_data1/US-10000512.AAMRHmP213A1AAAPEI-1.H7VTKBBXX_2.1.fq.gz -2 RNAseq_data1/US-10000512.AAMRHmP213A1AAAPEI-1.H7VTKBBXX_2.2.fq.gz -o out

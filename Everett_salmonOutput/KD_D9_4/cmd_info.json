@@ -1,0 +1,9 @@
+{
+    "salmon_version": "0.11.3",
+    "threads": "8",
+    "index": "/home/everett/data/sequenceDatabases/Salmon/GRCh38.gencode29/",
+    "libType": "A",
+    "unmatedReads": "sequencingData/CL100021371_L01_28.fq.gz",
+    "output": "salmonOutput/KD_D9_4",
+    "auxDir": "aux_info"
+}
