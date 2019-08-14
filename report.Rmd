@@ -16,7 +16,7 @@ header-includes:
 output:
   pdf_document:
     toc: false
-    keep_tex: yes
+    keep_tex: no
     latex_engine: xelatex
 ---
 ```{r echo = FALSE, message=FALSE, warning=FALSE}
@@ -51,7 +51,7 @@ Figure 1. Cell sorting experiments.
 \normalsize
 
 ```{r Figure1, fig.height=4, echo=FALSE, fig.align='center'}
-img <- readPNG("figures/NPM_ALK_cell_sorting2.png")
+img <- readPNG("report_figures/NPM_ALK_cell_sorting2.png")
 grid.raster(img)
 ```
 
@@ -423,7 +423,7 @@ s$ort <- factor(s$ort)
 
 e$Ymin <- 0
 e$Ymax <- max(s$maxAbund)
-colors <- c(brewer.pal(n = 6, name = "Paired"), 'black')
+colors <- c(brewer.pal(n = 7, name = "Paired"), 'black')
 ggplot() +
   theme_bw() +
   scale_shape_manual(values = c(21, 24), name='Genotype') +
