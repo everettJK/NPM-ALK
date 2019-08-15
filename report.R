@@ -9,8 +9,9 @@ library(stringr)
 library(DESeq2)
 library(gtools)
 library(pathview)
+library(xlsx)
 source('./lib.R')
-options(stringsAsFactors = FALSE, useFancyQuotes = FALSE)
+options(stringsAsFactors = FALSE, useFancyQuotes = FALSE, java.parameters = "-Xmx4g") 
 
 # Create a report list object to store data need for final report.
 report <- list()
@@ -142,8 +143,10 @@ salmon2.ddsTxi <- processSalmon(salmon2.txi)
 
 salmon1.rld <- rlog(salmon1.ddsTxi) # Transform count data with regularized logarithm which returns log2 data normalized to library size. 
 salmon1.rlogMat <- assay(salmon1.rld) # assay() extracts the matrix of normalized values.
-i <- unname(apply(salmon1.rlogMat, 1, function(x) all(x < 14)))
-salmon1.pca <- prcomp(t(salmon1.rlogMat[i,]), scale = FALSE, center = TRUE)
+
+# i <- unname(apply(salmon1.rlogMat, 1, function(x) all(x < 14))) # Exclude outlier data points which were not caught by SALMON.
+# salmon1.pca <- prcomp(t(salmon1.rlogMat[i,]), scale = FALSE, center = TRUE)
+salmon1.pca <- prcomp(t(salmon1.rlogMat), scale = FALSE, center = TRUE)
 
 # Use the 'genotype_timePoint_donor' formatted data points to extract data for the plots
 salmon1.pca.plotData          <- data.frame(s = row.names(salmon1.pca$x), x = salmon1.pca$x[,1], y = salmon1.pca$x[,2], z = salmon1.pca$x[,3])
@@ -164,6 +167,43 @@ report$salmon1.pca.plot <-
   scale_color_manual(values=c('red', 'blue', 'green4', 'black')) +
   labs(x = paste0('PC1 (', sprintf("%.2f", summary(salmon1.pca)$importance[3,][1] * 100), '%)'),
        y = paste0('PC2 (', sprintf("%.2f", (summary(salmon1.pca)$importance[3,][2] - summary(salmon1.pca)$importance[3,][1])  * 100), '%)'))
+
+
+# Alternative plots
+salmon1.rlogMat.noY664F <- salmon1.rlogMat[, - grep('Y664F', colnames(salmon1.rlogMat))]
+salmon1.noY664F.pca <- prcomp(t(salmon1.rlogMat.noY664F), scale = FALSE, center = TRUE)
+
+salmon1.pca.plotData2          <- data.frame(s = row.names(salmon1.noY664F.pca$x), x = salmon1.noY664F.pca$x[,1], y = salmon1.noY664F.pca$x[,2], z = salmon1.noY664F.pca$x[,3])
+salmon1.pca.plotData2$genotype <- do.call(rbind, strsplit(salmon1.pca.plotData2$s, '_'))[,1]
+salmon1.pca.plotData2$day      <- do.call(rbind, strsplit(salmon1.pca.plotData2$s, '_'))[,2]
+salmon1.pca.plotData2$subject  <- do.call(rbind, strsplit(salmon1.pca.plotData2$s, '_'))[,3]
+salmon1.pca.plotData2$subject  <- gsub('don', '', salmon1.pca.plotData2$subject)
+salmon1.pca.plotData2          <- salmon1.pca.plotData2[mixedorder(as.character(salmon1.pca.plotData2$day)),]
+salmon1.pca.plotData2$day      <- factor(salmon1.pca.plotData2$day, levels = unique(salmon1.pca.plotData2$day))
+salmon1.pca.plotData2$genotype <- factor(salmon1.pca.plotData2$genotype, levels = c('none', 'KD', 'WT'))
+
+report$salmon1.pca.plot2 <- 
+  ggplot(salmon1.pca.plotData2, aes(x=x, y=y, color = genotype, shape = day, label = subject)) +
+  theme_bw() +
+  geom_point(size = 4, stroke = 1.5) +
+  scale_shape_manual(values = 21:25) +
+  scale_color_manual(values=c('black', 'red', 'dodgerblue2')) +
+  labs(x = paste0('PC1 (', sprintf("%.2f", summary(salmon1.pca)$importance[3,][1] * 100), '%)'),
+       y = paste0('PC2 (', sprintf("%.2f", (summary(salmon1.pca)$importance[3,][2] - summary(salmon1.pca)$importance[3,][1])  * 100), '%)')) +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
+
+
+report$salmon1.pca.plot3 <- 
+  ggplot(salmon1.pca.plotData, aes(x=x, y=y, color = genotype, shape = day, label = subject)) +
+  theme_bw() +
+  geom_point(size = 4, stroke = 1.5) +
+  scale_shape_manual(values = 21:25) +
+  scale_color_manual(values=c('black', 'red', 'dodgerblue2', 'green4')) +
+  labs(x = paste0('PC1 (', sprintf("%.2f", summary(salmon1.pca)$importance[3,][1] * 100), '%)'),
+       y = paste0('PC2 (', sprintf("%.2f", (summary(salmon1.pca)$importance[3,][2] - summary(salmon1.pca)$importance[3,][1])  * 100), '%)')) +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
 
 
 
@@ -231,6 +271,12 @@ RNAseq1_WT_D9_vs_WT_D6          <- addGeneNamesToContrast(results(salmon1.ddsTxi
 RNAseq1_WT_D12_vs_WT_D6         <- addGeneNamesToContrast(results(salmon1.ddsTxi, contrast=c("repGrp", "WT_d12", "WT_d6")))
 RNAseq1_WT_D33_vs_WT_D6         <- addGeneNamesToContrast(results(salmon1.ddsTxi, contrast=c("repGrp", "WT_d33", "WT_d6")))
 RNAseq1_WT_D63_vs_WT_D6         <- addGeneNamesToContrast(results(salmon1.ddsTxi, contrast=c("repGrp", "WT_d63", "WT_d6")))
+RNAseq1_WT_D6_vs_KD_D6          <- addGeneNamesToContrast(results(salmon1.ddsTxi, contrast=c("repGrp", "WT_d6", "KD_d6")))
+RNAseq1_WT_D9_vs_KD_D9          <- addGeneNamesToContrast(results(salmon1.ddsTxi, contrast=c("repGrp", "WT_d9", "KD_d9")))
+RNAseq1_WT_D12_vs_KD_D12        <- addGeneNamesToContrast(results(salmon1.ddsTxi, contrast=c("repGrp", "WT_d12", "KD_d12")))
+RNAseq1_WT_D33_vs_KD_D12        <- addGeneNamesToContrast(results(salmon1.ddsTxi, contrast=c("repGrp", "WT_d33", "KD_d12")))
+RNAseq1_WT_D63_vs_KD_D12        <- addGeneNamesToContrast(results(salmon1.ddsTxi, contrast=c("repGrp", "WT_d63", "KD_d12")))
+
 
 RNAseq2_WT_D6_vs_KD_D6          <- addGeneNamesToContrast(results(salmon2.ddsTxi, contrast=c("repGrp","WT_D6","KD_D6")))
 RNAseq2_TrpM_D6_vs_KD_D6        <- addGeneNamesToContrast(results(salmon2.ddsTxi, contrast=c("repGrp","TrpM_D6","KD_D6")))
@@ -419,34 +465,41 @@ report$SWI_SNF_genes_RNAseq <-
 # Volcano plots
 #--------------------------------------------------------------------------------------------------
 
-plot.data <- subset(data.frame(RNAseq1_WT_D9_vs_KD_D9), ! is.na(padj))
-plot.data$f <- ifelse(plot.data$padj > 0.05, 'p > 0.05', ifelse(plot.data$padj > 0.001, '0.001 < p < 0.05', 'p < 0.001'))
-plot.data$f <- factor(as.character(plot.data$f), levels = c('p > 0.05', '0.001 < p < 0.05', 'p < 0.001'))
+createVolcanoPlot <- function(RNAseq, title, file){
+  plot.data <- subset(data.frame(RNAseq), ! is.na(padj))
+  plot.data$class <- ifelse(plot.data$padj > 0.05, 'No significant change', ifelse(plot.data$log2FoldChange >= 0, 'Increased', 'Decreased'))
+  plot.data$class <- factor(as.character(plot.data$class), levels = c('No significant change', 'Increased', 'Decreased'))
 
-plot.data$s <- ifelse(-log10(plot.data$padj) <= 100, 'p > 1e-100', 'p < 1e-100')
-plot.data$s <- factor(as.character(plot.data$s), levels = c('p > 1e-100', 'p < 1e-100'))
-plot.data[which(plot.data$s == 'p < 1e-100'),]$padj <- 1e-100
+  plot.data$foldChange <- 2^plot.data$log2FoldChange
+  gc()
+  write.xlsx2(plot.data, file = sub('\\.\\S+$', '.xlsx', file), col.names = TRUE, row.names = TRUE)
+  
+  p <- ggplot(plot.data, aes(foldChange, -log10(padj), fill = class)) +
+       theme_bw() +
+       scale_fill_manual(name = 'Transcription', values = c('gray50', 'red', 'dodgerblue2')) +
+       geom_point(shape = 21, size = 2, alpha = 0.5, color = 'black') +
+       scale_x_log10() +
+       annotation_logticks(base = 10, sides="b") +
+       theme(panel.border = element_blank(), 
+             panel.grid.major = element_blank(),
+             panel.grid.minor = element_blank(), 
+             axis.line = element_line(colour = "black")) +
+      ggtitle(title) +
+      guides(fill = guide_legend(override.aes=list(shape=21, size = 3)),
+             shape = guide_legend(override.aes=list(size = 3))) +
+      labs(x= 'Fold Change', y = '-log10(adjusted p-value)')
+  
+  ggsave(p, file = file)
+  p
+}
 
-plot.data$foldChange <- 2^plot.data$log2FoldChange
+report$RNAseq1_WT_D6_vs_KD_D6_volcano   <- createVolcanoPlot(RNAseq1_WT_D6_vs_KD_D6,   'WT D6 vs KD D6',  'paper_figures_and_tables/RNAseq1_WT_D6_vs_KD_D6_volcano.pdf')
+report$RNAseq1_WT_D9_vs_KD_D9_volcano   <- createVolcanoPlot(RNAseq1_WT_D9_vs_KD_D9,   'WT D9 vs KD D9',  'paper_figures_and_tables/RNAseq1_WT_D9_vs_KD_D9_volcano.pdf')
+report$RNAseq1_WT_D12_vs_KD_D12_volcano <- createVolcanoPlot(RNAseq1_WT_D12_vs_KD_D12, 'WT D12 vs KD D12', 'paper_figures_and_tables/RNAseq1_WT_D12_vs_KD_D12_volcano.pdf')
 
-# subset(plot.data, abs(log2FoldChange) > 20)
-#plot.data <- subset(plot.data, abs(plot.data$log2FoldChange) < 20)
+report$RNAseq1_WT_D33_vs_KD_D12_volcano <- createVolcanoPlot(RNAseq1_WT_D33_vs_KD_D12, 'WT D33 vs KD D12', 'paper_figures_and_tables/RNAseq1_WT_D33_vs_KD_D12_volcano.pdf')
+report$RNAseq1_WT_D63_vs_KD_D12_volcano <- createVolcanoPlot(RNAseq1_WT_D63_vs_KD_D12, 'WT D63 vs KD D12', 'paper_figures_and_tables/RNAseq1_WT_D63_vs_KD_D12_volcano.pdf')
 
-ggplot(plot.data, aes(foldChange, -log10(padj), fill = f, shape = s )) +
-  theme_bw() +
-  scale_fill_manual(name = 'Adjusted p-value intervals', values = c('gray50', 'blue', 'red')) +
-  scale_shape_manual(name = 'Adjusted p-value cut offs', values = c(21, 22)) +
-  geom_point(size = 2, alpha = 0.5, color = 'black') +
-  scale_x_log10() +
-  annotation_logticks(base = 10, sides="b") +
-  theme(panel.border = element_blank(), 
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(), 
-        axis.line = element_line(colour = "black")) +
-  ggtitle('WT D9 vs KD') +
-  guides(fill = guide_legend(override.aes=list(shape=21, size = 3)),
-         shape = guide_legend(override.aes=list(size = 3))) +
-  labs(x= 'Fold Change', y = '-log10(adjusted p-value)')
 
 #--------------------------------------------------------------------------------------------------
 

@@ -29,11 +29,7 @@ f <-
         panel.border = element_blank(), panel.grid.major = element_blank(),
               panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
         
-ggsave(f, file = "paper_figures/WT_clonality_decrease.pdf")
-
-
-
-
+ggsave(f, file = "WT_clonality_decrease.pdf")
 
 
 x <- report$sampleAbundancePlotsData$pNA93
@@ -68,5 +64,5 @@ theme(axis.text=element_text(size=12),
       panel.border = element_blank(), panel.grid.major = element_blank(),
       panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
 
-ggsave(f, file = "paper_figures/WT_clonality_decrease_NA93_example.pdf")
+ggsave(f, file = "WT_clonality_decrease_NA93_example.pdf")
 
