@@ -11,7 +11,7 @@ library(gtools)
 library(pathview)
 library(xlsx)
 source('./lib.R')
-options(stringsAsFactors = FALSE, useFancyQuotes = FALSE, java.parameters = "-Xmx4g") 
+options(stringsAsFactors = FALSE, useFancyQuotes = FALSE) 
 
 # Create a report list object to store data need for final report.
 report <- list()
@@ -193,6 +193,7 @@ report$salmon1.pca.plot2 <-
   theme(panel.border = element_blank(), panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
 
+ggsave(report$salmon1.pca.plot2, file = 'paper_figures_and_tables/RNAseq1_no_Y664F.pdf')
 
 report$salmon1.pca.plot3 <- 
   ggplot(salmon1.pca.plotData, aes(x=x, y=y, color = genotype, shape = day, label = subject)) +
@@ -205,7 +206,7 @@ report$salmon1.pca.plot3 <-
   theme(panel.border = element_blank(), panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
 
-
+ggsave(report$salmon1.pca.plot3, file = 'paper_figures_and_tables/RNAseq1_with_Y664F.pdf')
 
 # Second SALMON run PCA.
 
@@ -303,6 +304,79 @@ save.image(file='savePoints/sp1.RData')
 
 # Heatmaps
 #--------------------------------------------------------------------------------------------------
+
+RNAseq1_WT_vs_KD <- 
+  dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq1_WT_D6_vs_KD_D6),   exp = 'WT D6', timePoint = 'D6'),
+                   dplyr::mutate(data.frame(RNAseq1_WT_D9_vs_KD_D9),   exp = 'WT D9', timePoint = 'D9'),
+                   dplyr::mutate(data.frame(RNAseq1_WT_D12_vs_KD_D12), exp = 'WT D12', timePoint = 'D12'),
+                   dplyr::mutate(data.frame(RNAseq1_WT_D33_vs_KD_D12), exp = 'WT D33', timePoint = 'D33'),
+                   dplyr::mutate(data.frame(RNAseq1_WT_D63_vs_KD_D12), exp = 'WT D63', timePoint = 'D63')) %>%
+  dplyr::filter(! is.na(padj)) %>%
+  dplyr::group_by(exp, gene) %>% 
+  dplyr::top_n(-1, wt = padj) %>%
+  dplyr::ungroup()
+
+
+createGeneListHeatMap <- function(data, geneList, scaleLimit, orderByFoldChange = TRUE){
+  plot.data      <- subset(data, gene %in% geneList)
+  plot.data$gene <- factor(as.character(plot.data$gene), levels = rev(geneList))
+  plot.data$sig  <- factor(ifelse(plot.data$padj <= 0.05, TRUE, FALSE), levels = c(TRUE, FALSE))
+  plot.data$timePoint <- factor(as.character(plot.data$timePoint), levels =  gtools::mixedsort(unique(plot.data$timePoint)))
+
+  midScaleMark <- floor(scaleLimit/2)
+  
+  if(orderByFoldChange){
+    plot.data <- group_by(plot.data, gene) %>% mutate(rowsum = sum(log2FoldChange)) %>% ungroup() %>% arrange(rowsum) 
+    plot.data$gene <- factor(as.character(plot.data$gene), levels = unique(plot.data$gene))
+  }
+  
+  make_square(ggplot(plot.data, aes(x = timePoint, y = gene, fill = log2FoldChange, shape = sig)) +
+                  theme_bw() +
+                  geom_tile(color="gray90",size=0.6) + 
+                  scale_shape_manual(values = c(42, 32)) +
+                  geom_point(size = 2, color = 'gray25', show.legend = FALSE) +
+                  scale_fill_gradient2(name = 'Fold change', low="navy", mid="white", high="red", midpoint=0, 
+                                       limits=c(-scaleLimit, scaleLimit), breaks = c(-scaleLimit, -midScaleMark, 0, midScaleMark, scaleLimit)) + 
+                  scale_y_discrete(expand=c(0,0)) +
+                  scale_x_discrete(expand=c(0,0)) +
+                  labs(x='', y = '') +
+                  theme(axis.text.x = element_text(angle = 90, hjust = 1),
+                        panel.border = element_blank(), 
+                        panel.grid.major = element_blank(),
+                        panel.grid.minor = element_blank(), 
+                        axis.line = element_line(colour = "black"),
+                        legend.position="bottom") +
+                  guides(fill=guide_colorbar(title.position = "top", barwidth=5)), fudge = 0.75)
+}
+
+
+
+RNAseq1_WT_vs_KD$gene <- toupper(RNAseq1_WT_vs_KD$gene)
+
+ALK_ALCL_a <- c('IL1RAP', 'BATF3', 'FBN1', 'TMEM158', 'IMPA2', 'FUT7', 'IL2RA', 'TMEM260', 'MYO10', 'MCAM', 'SLC12A8', 
+                    'NQO1', 'AGT', 'RHOC', 'PRF1', 'TEAD4', 'SPP1', 'CLEC3B', 'RUBCNL', 'G0S2', 'S100A9', 'TNFRSF8', 'PTPRG')
+  
+ALK_ALCL_b <- c('IL10', 'TNFRSF8', 'GZMB', 'CD274', 'IL17A', 'IL22', 'JUNB', 'PRF1', 'CDC25A', 'LCK', 'BCL11B',
+                'LAT', 'LCP2', 'IL2RG', 'ZAP70', 'CD3E')
+
+Tcell_TFs     <- c('TCF7', 'GATA3', 'LEF1', 'BCL11B', 'BACH2', 'NFATC3', 'HDAC7', 'SATB1', 'KLF3', 'ETS1', 'CAMK4', 'KLF7', 'MYC', 'THEMIS')
+Tcell_sig     <- c('ZAP70', 'LCK', 'ITK', 'FYB1', 'NCK2', 'GRAP2', 'RASGRP1', 'FOXO1', 'PTPN6', 'LTB', 'MAL', 'ITPKB', 'LAT')
+Tcell_recp    <- c('TRAC', 'TRBC2', 'TRBC1', 'TRGC1', 'CD3E', 'CD3D', 'CD3G', 'CD28', 'CD27', 'IL2RG', 'CCR7', 'CTLA4', 'CD2')
+NonTcell_spec <- c('HHEX', 'JUNB', 'MEIS1', 'LAT2', 'LYN', 'NFE2', 'PAX5', 'MPO', 'GADD45A', 'MAFB', 'MEF2C', 'CD34', 'FLT3', 'GATA2')
+EmbStemSpec   <- c('SOX2', 'SOX4', 'SOX5', 'TEAD4', 'ZIC2', 'ZIC5', 'ZEB2', 'DTX1', 'TWIST1', 'EDN1', 'PDGFA', 'CCND1', 'ETS2', 'EZH2', 'ZIC1') 
+
+report$ALK_ALCL_heatmap_a <- createGeneListHeatMap(RNAseq1_WT_vs_KD, ALK_ALCL_a, 9)
+report$ALK_ALCL_heatmap_b <- createGeneListHeatMap(RNAseq1_WT_vs_KD, ALK_ALCL_b, 9)
+
+report$Tcell_TFs_heatmap     <- createGeneListHeatMap(RNAseq1_WT_vs_KD, Tcell_TFs, 11)
+report$Tcell_sig_heatmap     <- createGeneListHeatMap(RNAseq1_WT_vs_KD, Tcell_sig, 11)
+report$Tcell_recp_heatmap    <- createGeneListHeatMap(RNAseq1_WT_vs_KD, Tcell_recp, 11)
+report$NonTcell_spec_heatmap <- createGeneListHeatMap(RNAseq1_WT_vs_KD, NonTcell_spec, 11)
+report$EmbStemSpec_heatmap   <- createGeneListHeatMap(RNAseq1_WT_vs_KD, EmbStemSpec, 11)
+
+
+
+
 
 RNAseq1_Y664F_vs_KD <- 
   dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq1_Y664F_D9_vs_KD_D9),   exp = 'Y664F D9'),

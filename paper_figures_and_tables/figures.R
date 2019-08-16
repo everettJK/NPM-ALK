@@ -66,3 +66,13 @@ theme(axis.text=element_text(size=12),
 
 ggsave(f, file = "WT_clonality_decrease_NA93_example.pdf")
 
+
+ggsave(report$ALK_ALCL_heatmap_a,    file = 'ALK_ALCL_heatmap_a.pdf')
+ggsave(report$ALK_ALCL_heatmap_b,    file = 'ALK_ALCL_heatmap_b.pdf')
+ggsave(report$Tcell_TFs_heatmap,     file = 'Tcell_TFs_heatmap.pdf')
+ggsave(report$Tcell_sig_heatmap,     file = 'Tcell_sig_heatmap.pdf')
+ggsave(report$Tcell_recp_heatmap,    file = 'Tcell_recp_heatmap.pdf')
+ggsave(report$NonTcell_spec_heatmap, file = 'NonTcell_spec_heatmap.pdf')
+ggsave(report$EmbStemSpec_heatmap,   file = 'EmbStemSpec_heatmap.pdf')
+
+
