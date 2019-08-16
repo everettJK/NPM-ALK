@@ -346,7 +346,8 @@ createGeneListHeatMap <- function(data, geneList, scaleLimit, orderByFoldChange 
                         panel.grid.minor = element_blank(), 
                         axis.line = element_line(colour = "black"),
                         legend.position="bottom") +
-                  guides(fill=guide_colorbar(title.position = "top", barwidth=5)), fudge = 0.75)
+                  guides(fill=guide_colorbar(title.position = "top", barwidth=5)), fudge = 0.75) +
+                  ggtitle(paste0('pvals ', signif(min(plot.data$padj), 2), ' : ', signif(max(plot.data$padj), 2)))
 }
 
 
