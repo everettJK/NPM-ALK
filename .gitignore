@@ -1,5 +1,5 @@
 data/STRINGdb
-savePoints
+savePoints/*.RData
 salmonOutput
 report_files
 report.rds

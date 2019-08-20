@@ -216,8 +216,9 @@ salmon2.rlogMat <- assay(salmon2.rld)  # assay() extracts the matrix of normaliz
 
 
 # Perform principle component analysis.
-i <- unname(apply(salmon2.rlogMat, 1, function(x) all(x < 14)))
-salmon2.pca <- prcomp(t(salmon2.rlogMat[i,]), scale = FALSE, center = TRUE)
+# i <- unname(apply(salmon2.rlogMat, 1, function(x) all(x < 14)))
+#salmon2.pca <- prcomp(t(salmon2.rlogMat[i,]), scale = FALSE, center = TRUE)
+salmon2.pca <- prcomp(t(salmon2.rlogMat), scale = FALSE, center = TRUE)
 
 # Use the 'genotype_timePoint_donor' formatted data points to extract data for the plots
 salmon2.pca.plotData          <- data.frame(s = row.names(salmon2.pca$x), x = salmon2.pca$x[,1], y = salmon2.pca$x[,2], z = salmon2.pca$x[,3])
@@ -262,7 +263,7 @@ addGeneNamesToContrast <- function(contrast){
 
 
 # Create contrasts which contain the log2 fold change values and adjusted pvalues.
-
+#--------------------------------------------------------------------------------------------------
 RNAseq1_Y664F_D9_vs_WT_D9       <- addGeneNamesToContrast(results(salmon1.ddsTxi, contrast=c("repGrp", "Y664F_d9", "WT_d9")))
 RNAseq1_Y664F_D12_vs_WT_D12     <- addGeneNamesToContrast(results(salmon1.ddsTxi, contrast=c("repGrp", "Y664F_d12", "WT_d12")))
 RNAseq1_Y664F_D9_vs_KD_D9       <- addGeneNamesToContrast(results(salmon1.ddsTxi, contrast=c("repGrp", "Y664F_d9", "KD_d9")))
@@ -277,7 +278,6 @@ RNAseq1_WT_D9_vs_KD_D9          <- addGeneNamesToContrast(results(salmon1.ddsTxi
 RNAseq1_WT_D12_vs_KD_D12        <- addGeneNamesToContrast(results(salmon1.ddsTxi, contrast=c("repGrp", "WT_d12", "KD_d12")))
 RNAseq1_WT_D33_vs_KD_D12        <- addGeneNamesToContrast(results(salmon1.ddsTxi, contrast=c("repGrp", "WT_d33", "KD_d12")))
 RNAseq1_WT_D63_vs_KD_D12        <- addGeneNamesToContrast(results(salmon1.ddsTxi, contrast=c("repGrp", "WT_d63", "KD_d12")))
-
 
 RNAseq2_WT_D6_vs_KD_D6          <- addGeneNamesToContrast(results(salmon2.ddsTxi, contrast=c("repGrp","WT_D6","KD_D6")))
 RNAseq2_TrpM_D6_vs_KD_D6        <- addGeneNamesToContrast(results(salmon2.ddsTxi, contrast=c("repGrp","TrpM_D6","KD_D6")))
@@ -298,9 +298,6 @@ plotCounts(salmon2.ddsTxi, gene="ENSG00000117713.19", intgroup="repGrp")  # RNAs
 # Big fold change from minority of samples showing large changes.
 plotCounts(salmon1.ddsTxi, gene="ENSG00000277067.4", intgroup="repGrp")  # RNAseq2_WT_D9_vs_KD_D9 ARID1A  padj 2.973e-07  fold change: 39
 
-save.image(file='savePoints/sp1.RData')
-
-
 
 # Heatmaps
 #--------------------------------------------------------------------------------------------------
@@ -315,6 +312,7 @@ RNAseq1_WT_vs_KD <-
   dplyr::group_by(exp, gene) %>% 
   dplyr::top_n(-1, wt = padj) %>%
   dplyr::ungroup()
+RNAseq1_WT_vs_KD$gene <- toupper(RNAseq1_WT_vs_KD$gene)
 
 
 createGeneListHeatMap <- function(data, geneList, scaleLimit, orderByFoldChange = TRUE){
@@ -346,29 +344,23 @@ createGeneListHeatMap <- function(data, geneList, scaleLimit, orderByFoldChange 
                         panel.grid.minor = element_blank(), 
                         axis.line = element_line(colour = "black"),
                         legend.position="bottom") +
-                  guides(fill=guide_colorbar(title.position = "top", barwidth=5)), fudge = 0.75) +
-                  ggtitle(paste0('pvals ', signif(min(plot.data$padj), 2), ' : ', signif(max(plot.data$padj), 2)))
+                  guides(fill=guide_colorbar(title.position = "top", barwidth=5)), fudge = 0.75) 
 }
 
 
-
-RNAseq1_WT_vs_KD$gene <- toupper(RNAseq1_WT_vs_KD$gene)
-
-ALK_ALCL_a <- c('IL1RAP', 'BATF3', 'FBN1', 'TMEM158', 'IMPA2', 'FUT7', 'IL2RA', 'TMEM260', 'MYO10', 'MCAM', 'SLC12A8', 
-                    'NQO1', 'AGT', 'RHOC', 'PRF1', 'TEAD4', 'SPP1', 'CLEC3B', 'RUBCNL', 'G0S2', 'S100A9', 'TNFRSF8', 'PTPRG')
-  
-ALK_ALCL_b <- c('IL10', 'TNFRSF8', 'GZMB', 'CD274', 'IL17A', 'IL22', 'JUNB', 'PRF1', 'CDC25A', 'LCK', 'BCL11B',
-                'LAT', 'LCP2', 'IL2RG', 'ZAP70', 'CD3E')
-
+# Gene of interest for creating heat maps.
+ALK_ALCL_a    <- c('IL1RAP', 'BATF3', 'FBN1', 'TMEM158', 'IMPA2', 'FUT7', 'IL2RA', 'TMEM260', 'MYO10', 'MCAM', 'SLC12A8', 'NQO1', 'AGT', 'RHOC', 'PRF1', 'TEAD4', 'SPP1', 'CLEC3B', 'RUBCNL', 'G0S2', 'S100A9', 'TNFRSF8', 'PTPRG')
+ALK_ALCL_b    <- c('IL10', 'TNFRSF8', 'GZMB', 'CD274', 'IL17A', 'IL22', 'JUNB', 'PRF1', 'CDC25A', 'LCK', 'BCL11B','LAT', 'LCP2', 'IL2RG', 'ZAP70', 'CD3E')
 Tcell_TFs     <- c('TCF7', 'GATA3', 'LEF1', 'BCL11B', 'BACH2', 'NFATC3', 'HDAC7', 'SATB1', 'KLF3', 'ETS1', 'CAMK4', 'KLF7', 'MYC', 'THEMIS')
 Tcell_sig     <- c('ZAP70', 'LCK', 'ITK', 'FYB1', 'NCK2', 'GRAP2', 'RASGRP1', 'FOXO1', 'PTPN6', 'LTB', 'MAL', 'ITPKB', 'LAT')
 Tcell_recp    <- c('TRAC', 'TRBC2', 'TRBC1', 'TRGC1', 'CD3E', 'CD3D', 'CD3G', 'CD28', 'CD27', 'IL2RG', 'CCR7', 'CTLA4', 'CD2')
 NonTcell_spec <- c('HHEX', 'JUNB', 'MEIS1', 'LAT2', 'LYN', 'NFE2', 'PAX5', 'MPO', 'GADD45A', 'MAFB', 'MEF2C', 'CD34', 'FLT3', 'GATA2')
 EmbStemSpec   <- c('SOX2', 'SOX4', 'SOX5', 'TEAD4', 'ZIC2', 'ZIC5', 'ZEB2', 'DTX1', 'TWIST1', 'EDN1', 'PDGFA', 'CCND1', 'ETS2', 'EZH2', 'ZIC1') 
 
-report$ALK_ALCL_heatmap_a <- createGeneListHeatMap(RNAseq1_WT_vs_KD, ALK_ALCL_a, 9)
-report$ALK_ALCL_heatmap_b <- createGeneListHeatMap(RNAseq1_WT_vs_KD, ALK_ALCL_b, 9)
 
+# Create heat maps for gene of interest sets where select sets share common scales.
+report$ALK_ALCL_heatmap_a    <- createGeneListHeatMap(RNAseq1_WT_vs_KD, ALK_ALCL_a, 9)
+report$ALK_ALCL_heatmap_b    <- createGeneListHeatMap(RNAseq1_WT_vs_KD, ALK_ALCL_b, 9)
 report$Tcell_TFs_heatmap     <- createGeneListHeatMap(RNAseq1_WT_vs_KD, Tcell_TFs, 11)
 report$Tcell_sig_heatmap     <- createGeneListHeatMap(RNAseq1_WT_vs_KD, Tcell_sig, 11)
 report$Tcell_recp_heatmap    <- createGeneListHeatMap(RNAseq1_WT_vs_KD, Tcell_recp, 11)
@@ -379,160 +371,40 @@ report$EmbStemSpec_heatmap   <- createGeneListHeatMap(RNAseq1_WT_vs_KD, EmbStemS
 
 
 
-RNAseq1_Y664F_vs_KD <- 
-  dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq1_Y664F_D9_vs_KD_D9),   exp = 'Y664F D9'),
-                   dplyr::mutate(data.frame(RNAseq1_Y664F_D12_vs_KD_D12), exp = 'Y664F D12')) %>%
-  dplyr::mutate(exp = factor(exp, levels = c('Y664F D9', 'Y664F D12'))) %>%
-  dplyr::filter(! is.na(padj)) %>%
-  dplyr::group_by(exp, gene) %>% 
-  dplyr::top_n(-1, wt = padj) %>%
-  dplyr::ungroup()
-
-
-
 # RNAseq2  WT / TrpM vs KD
-
-RNAseq2_WT_TrpM_vs_KD <- 
-  dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq2_WT_D6_vs_KD_D6),   exp = 'WT D6'),
-                   dplyr::mutate(data.frame(RNAseq2_TrpM_D6_vs_KD_D6), exp = 'TrpM D6'),
-                   dplyr::mutate(data.frame(RNAseq2_WT_D9_vs_KD_D9),   exp = 'WT D9'),
-                   dplyr::mutate(data.frame(RNAseq2_TrpM_D9_vs_KD_D9), exp = 'TrpM D9')) %>%
-  dplyr::mutate(exp = factor(exp, levels = c('WT D6', 'TrpM D6', 'WT D9', 'TrpM D9'))) %>%
-  dplyr::filter(! is.na(padj)) %>%
-  dplyr::group_by(exp, gene) %>% 
-  dplyr::top_n(-1, wt = padj) %>%
-  dplyr::ungroup()
-
-RNAseq2_WT_TrpM_vs_KD.genes <- 
-  dplyr::group_by(RNAseq2_WT_TrpM_vs_KD, gene) %>%
-  dplyr::mutate(exps = n_distinct(exp)) %>%
-  dplyr::ungroup() %>%
-  dplyr::filter(! is.na(padj) & abs(log2FoldChange) >= 3 & abs(log2FoldChange) <= 14 & exps == n_distinct(exp) & padj <= 1e-70) %>%
-  dplyr::arrange(padj) %>%
-  dplyr::pull(gene) %>%
-  unique()
-
-RNAseq2_WT_TrpM_vs_KD.genesForPathways <- 
-  dplyr::group_by(RNAseq2_WT_TrpM_vs_KD, gene) %>%
-  dplyr::mutate(exps = n_distinct(exp)) %>%
-  dplyr::ungroup() %>%
-  dplyr::filter(! is.na(padj) & abs(log2FoldChange) >= 3 & abs(log2FoldChange) <= 14 & exps == n_distinct(exp) & padj <= 1e-20) %>%
-  dplyr::arrange(padj)
-
-
-plot.data.A <- dplyr::filter(RNAseq2_WT_TrpM_vs_KD, gene %in% RNAseq2_WT_TrpM_vs_KD.genes[1:38])  %>% dplyr::arrange(padj) %>% dplyr::mutate(gene = factor(gene, levels = rev(unique(gene)))) 
-plot.data.B <- dplyr::filter(RNAseq2_WT_TrpM_vs_KD, gene %in% RNAseq2_WT_TrpM_vs_KD.genes[39:75]) %>% dplyr::arrange(padj) %>% dplyr::mutate(gene = factor(gene, levels = rev(unique(gene)))) 
-
-report$RNAseq2_WT_TrpM_vs_KD.plotA <- 
-  make_square(ggplot(plot.data.A, aes(x = exp, y = gene, fill = log2FoldChange)) +
-              theme_bw() +
-              geom_tile(color="gray50",size=0.6) + 
-              scale_fill_gradient2(name = 'Fold change', low="navy", mid="white", high="red", midpoint=0, limits=c(-12, 12), breaks = c(-12, -6, 0, 6, 12)) + 
-              scale_y_discrete(expand=c(0,0)) +
-              scale_x_discrete(expand=c(0,0)) +
-              labs(x='', y = '') +
-              theme(axis.text.x = element_text(angle = 90, hjust = 1),
-                    panel.border = element_blank(), 
-                    panel.grid.major = element_blank(),
-                    panel.grid.minor = element_blank(), 
-                    axis.line = element_line(colour = "black"),
-                    legend.position="bottom") +
-              guides(fill=guide_colorbar(title.position = "top", barwidth=5)), fudge = 0.5)
-
-report$RNAseq2_WT_TrpM_vs_KD.plotB <- 
-  make_square(ggplot(plot.data.B, aes(x = exp, y = gene, fill = log2FoldChange)) +
-                theme_bw() +
-                geom_tile(color="gray50",size=0.6) + 
-                scale_fill_gradient2(name = 'Fold change', low="navy", mid="white", high="red", midpoint=0, limits=c(-12, 12), breaks = c(-12, -6, 0, 6, 12)) + 
-                scale_y_discrete(expand=c(0,0)) +
-                scale_x_discrete(expand=c(0,0)) +
-                labs(x='', y = '') +
-                theme(axis.text.x = element_text(angle = 90, hjust = 1),
-                      panel.border = element_blank(), 
-                      panel.grid.major = element_blank(),
-                      panel.grid.minor = element_blank(), 
-                      axis.line = element_line(colour = "black"),
-                      legend.position="bottom") +
-                guides(fill=guide_colorbar(title.position = "top", barwidth=5)), fudge = 0.5)
-
-
-
-# Heat maps for select gene lists.
 #--------------------------------------------------------------------------------------------------
 
-f <- list()
-f[['Signaling molecules']] <- 'data/Pawlicki_signaling.txt'
-f[['TCR a/b']] <- 'data/Pawlicki_TCRab.txt'
-f[['Transcriptional regulators']] <- 'data/Pawlicki_TranscriptionalRegulators.txt'
-f[['Upregulated in WNT']] <- 'data/Pawlicki_upInWT.txt'
+RNAseq2_WT_TrpM_vs_KD <- 
+  dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq2_WT_D6_vs_KD_D6),   exp = 'WT D6',   timePoint = 'D6 WT'),
+                   dplyr::mutate(data.frame(RNAseq2_TrpM_D6_vs_KD_D6), exp = 'TrpM D6', timePoint = 'D6 TrpM'),
+                   dplyr::mutate(data.frame(RNAseq2_WT_D9_vs_KD_D9),   exp = 'WT D9',   timePoint = 'D9 WT'),
+                   dplyr::mutate(data.frame(RNAseq2_TrpM_D9_vs_KD_D9), exp = 'TrpM D9', timePoint = 'D9 TrpM')) %>%
+  dplyr::filter(! is.na(padj)) %>%
+  dplyr::group_by(exp, gene) %>% 
+  dplyr::top_n(-1, wt = padj) %>%
+  dplyr::ungroup()
 
-g <- bind_rows(mapply(function(n, x){
-       genes <- readLines(x)
-       o <- bind_rows(subset(RNAseq2_WT_TrpM_vs_KD, gene %in% genes),
-                      subset(RNAseq1_Y664F_vs_KD, gene %in% genes))
-       
-       o$title <- n
-       o
-}, names(f), f, SIMPLIFY = FALSE))
+# Determine which genes should be used in the followin heat map.
+# Make sure that selected genes are seen across all time points.
+genes <- dplyr::group_by(RNAseq2_WT_TrpM_vs_KD, gene) %>%
+         dplyr::mutate(exps = n_distinct(exp), colsum = sum(log2FoldChange)) %>%
+         dplyr::ungroup() %>%
+         dplyr::filter(! is.na(padj) & abs(log2FoldChange) >= 3 & exps == n_distinct(exp) & padj <= 1e-70) %>%
+         dplyr::arrange(desc(colsum)) %>%
+         dplyr::pull(gene) %>%
+         unique()
 
-g$exp <- factor(as.character(g$exp), levels = c("WT D6", "TrpM D6", "WT D9", "TrpM D9", "Y664F D9", "Y664F D12"))
-g$marker <- ifelse(g$padj <= 0.05, TRUE, FALSE)
+report$RNAseq2_WT_TrpM_vs_KD.plotA <- createGeneListHeatMap(RNAseq2_WT_TrpM_vs_KD, genes[1:38], 11, orderByFoldChange = FALSE)
+report$RNAseq2_WT_TrpM_vs_KD.plotB <- createGeneListHeatMap(RNAseq2_WT_TrpM_vs_KD, genes[39:75], 11, orderByFoldChange = FALSE)
 
-options(digits=1)
-report$genesOfInterest_RNAseq <-
-  ggplot(g, aes(x = exp, y = gene, fill = log2FoldChange, shape = marker)) +
-         theme_bw() +
-         geom_tile(color = 'gray20') +
-         geom_point(alpha = 0.25) +
-         scale_shape_manual(values = c(1, 32)) +
-         scale_fill_gradient2(name = 'Fold change', low="navy", mid="white", high="red", 
-                              midpoint=0, limits=c(-11.1, 11.1), breaks = c(-11, -5, 0, 5, 11)) +
-         scale_y_discrete(expand=c(0,0)) +
-         scale_x_discrete(expand=c(0,0)) +
-         labs(x='', y = '') +
-         theme(strip.background = element_blank(),
-               axis.text.x = element_text(angle = 90, hjust = 1),
-               panel.border = element_blank(),
-               panel.grid.major = element_blank(),
-               panel.grid.minor = element_blank(),
-               axis.line = element_line(colour = "black"),
-               legend.position="bottom") +
-        guides(shape = FALSE, fill=guide_colorbar(title.position = "top",  barwidth=10)) +
-        facet_wrap(~title, scales = 'free') 
 
 
 
 # SWI/SNF
 #--------------------------------------------------------------------------------------------------
-genes <- RNAseq2_WT_D9_vs_KD_D9$gene[grepl('^SMARC|^ARID1|^ACTL6', RNAseq2_WT_D9_vs_KD_D9$gene)]
-
-g <- bind_rows(subset(RNAseq2_WT_TrpM_vs_KD, gene %in% genes),
-               subset(RNAseq1_Y664F_vs_KD, gene %in% genes))
-g$exp <- factor(as.character(g$exp), levels = c("WT D6",  "WT D9", "TrpM D6", "TrpM D9", "Y664F D9", "Y664F D12"))
-
-g$exp <- factor(as.character(g$exp), levels = c("WT D6", "TrpM D6", "WT D9", "TrpM D9", "Y664F D9", "Y664F D12"))
-g$marker <- ifelse(g$padj <= 0.05, TRUE, FALSE)
-
-options(digits=1)
-report$SWI_SNF_genes_RNAseq <-
-  ggplot(g, aes(x = exp, y = gene, fill = log2FoldChange, shape = marker)) +
-  theme_bw() +
-  geom_tile(color = 'gray20') +
-  geom_point(alpha = 0.25) +
-  scale_shape_manual(values = c(1, 32)) +
-  scale_fill_gradient2(name = 'Fold change', low="navy", mid="white", high="red", 
-                       midpoint=0, limits=c(-6.1, 6.1), breaks = c(-6, -3, 0, 3, 6)) +
-  scale_y_discrete(expand=c(0,0)) +
-  scale_x_discrete(expand=c(0,0)) +
-  labs(x='', y = '') +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1),
-        panel.border = element_blank(),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        axis.line = element_line(colour = "black"),
-        legend.position="bottom") +
-  guides(shape = FALSE, fill=guide_colorbar(title.position = "top",  barwidth=10)) 
-
+genes    <- unique(RNAseq2_WT_TrpM_vs_KD$gene[grepl('^SMARC|^ARID1|^ACTL6', RNAseq2_WT_TrpM_vs_KD$gene)])
+g        <- subset(RNAseq2_WT_TrpM_vs_KD, gene %in% genes)
+report$SWI_SNF_genes_RNAseq <- createGeneListHeatMap(g, unique(g$gene), 6)
 
 
 
@@ -571,16 +443,37 @@ createVolcanoPlot <- function(RNAseq, title, file){
 report$RNAseq1_WT_D6_vs_KD_D6_volcano   <- createVolcanoPlot(RNAseq1_WT_D6_vs_KD_D6,   'WT D6 vs KD D6',  'paper_figures_and_tables/RNAseq1_WT_D6_vs_KD_D6_volcano.pdf')
 report$RNAseq1_WT_D9_vs_KD_D9_volcano   <- createVolcanoPlot(RNAseq1_WT_D9_vs_KD_D9,   'WT D9 vs KD D9',  'paper_figures_and_tables/RNAseq1_WT_D9_vs_KD_D9_volcano.pdf')
 report$RNAseq1_WT_D12_vs_KD_D12_volcano <- createVolcanoPlot(RNAseq1_WT_D12_vs_KD_D12, 'WT D12 vs KD D12', 'paper_figures_and_tables/RNAseq1_WT_D12_vs_KD_D12_volcano.pdf')
-
 report$RNAseq1_WT_D33_vs_KD_D12_volcano <- createVolcanoPlot(RNAseq1_WT_D33_vs_KD_D12, 'WT D33 vs KD D12', 'paper_figures_and_tables/RNAseq1_WT_D33_vs_KD_D12_volcano.pdf')
 report$RNAseq1_WT_D63_vs_KD_D12_volcano <- createVolcanoPlot(RNAseq1_WT_D63_vs_KD_D12, 'WT D63 vs KD D12', 'paper_figures_and_tables/RNAseq1_WT_D63_vs_KD_D12_volcano.pdf')
 
 
+
+
+# Compare TrpM to WT 
 #--------------------------------------------------------------------------------------------------
+RNAseq1_Y664F_vs_WT <- 
+  dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq1_Y664F_D9_vs_WT_D9),   exp = 'Y664F D9', timePoint = 'D9'),
+                   dplyr::mutate(data.frame(RNAseq1_Y664F_D12_vs_WT_D12), exp = 'Y664F D12', timePoint = 'D12')) %>%
+  dplyr::filter(! is.na(padj)) %>%
+  dplyr::group_by(exp, gene) %>% 
+  dplyr::top_n(-1, wt = padj) %>%
+  dplyr::ungroup()
+
+RNAseq1_Y664F_vs_WT.genes <- 
+  dplyr::group_by(RNAseq1_Y664F_vs_WT, gene) %>%
+  dplyr::mutate(exps = n_distinct(as.character(exp))) %>%
+  dplyr::ungroup() %>%
+  dplyr::filter(abs(log2FoldChange) >= 2 & exps == n_distinct(exp) & padj <= 1e-03) %>%
+  dplyr::arrange(padj) %>%
+  dplyr::pull(gene) %>%
+  unique()
+
+report$RNAseq1.pval.WT_Y664F_vs_WT <- createGeneListHeatMap(RNAseq1_Y664F_vs_WT, RNAseq1_Y664F_vs_WT.genes, 9)
+
 
 RNAseq2_TrpM_vs_WT <- 
-  dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq2_TrpM_D6_vs_WT_D6), exp = 'D6'),
-                   dplyr::mutate(data.frame(RNAseq2_TrpM_D9_vs_WT_D9), exp = 'D9')) %>%
+  dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq2_TrpM_D6_vs_WT_D6), exp = 'D6', timePoint = 'D6'),
+                   dplyr::mutate(data.frame(RNAseq2_TrpM_D9_vs_WT_D9), exp = 'D9', timePoint = 'D9')) %>%
      dplyr::mutate(exp = factor(exp, levels = c('D6', 'D9'))) %>%
      dplyr::filter(! is.na(padj)) %>%
      dplyr::group_by(exp, gene) %>% 
@@ -591,126 +484,43 @@ RNAseq2_TrpM_vs_WT.genes <-
   dplyr::group_by(RNAseq2_TrpM_vs_WT, gene) %>%
   dplyr::mutate(exps = n_distinct(exp)) %>%
   dplyr::ungroup() %>%
-  dplyr::filter(! is.na(padj) & abs(log2FoldChange) >= 4 & abs(log2FoldChange) <= 14 & exps == n_distinct(exp) & padj <= 1e-15) %>%
+  dplyr::filter(! is.na(padj) & abs(log2FoldChange) >= 4 & exps == n_distinct(exp) & padj <= 1e-15) %>%
   dplyr::arrange(padj) %>%
   dplyr::pull(gene) %>%
   unique()
 
-plot.data <- dplyr::filter(RNAseq2_TrpM_vs_WT, gene %in% RNAseq2_TrpM_vs_WT.genes) %>% dplyr::arrange(padj) %>% dplyr::mutate(gene = factor(gene, levels = rev(unique(gene)))) 
-
-
-report$RNAseq2.pval.TrpM_vs_WT <- 
-  make_square(ggplot(plot.data, aes(x = exp, y = gene, fill = log2FoldChange)) +
-                theme_bw() +
-                geom_tile(color="gray50",size=0.6) + 
-                scale_fill_gradient2(name = 'Fold change', low="navy", mid="white", high="red", midpoint=0, limits=c(-8, 8), breaks = c(-8, -4, 0, 4, 8)) + 
-                scale_y_discrete(expand=c(0,0)) +
-                scale_x_discrete(expand=c(0,0)) +
-                labs(x='', y = '') +
-                theme(axis.text.x = element_text(angle = 90, hjust = 1),
-                      panel.border = element_blank(), 
-                      panel.grid.major = element_blank(),
-                      panel.grid.minor = element_blank(), 
-                      axis.line = element_line(colour = "black"),
-                      legend.position="bottom") +
-                guides(fill=guide_colorbar(title.position = "top", barwidth=5)), fudge = 0.5)
-
-
-#----------------------
+report$RNAseq2.pval.TrpM_vs_WT <- createGeneListHeatMap(RNAseq2_TrpM_vs_WT, RNAseq2_TrpM_vs_WT.genes, 8)
 
 
 
 
+# Compare WT transcription to earliest WT profile.
 #--------------------------------------------------------------------------------------------------
-# RNAseq1_Y664F_D9_vs_WT_D9
-
-RNAseq1_Y664F_vs_WT <- 
-  dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq1_Y664F_D9_vs_WT_D9),   exp = 'Y664F D9'),
-                   dplyr::mutate(data.frame(RNAseq1_Y664F_D12_vs_WT_D12), exp = 'Y664F D12')) %>%
-     dplyr::mutate(exp = factor(exp, levels = c('Y664F D9', 'Y664F D12'))) %>%
-     dplyr::filter(! is.na(padj)) %>%
-     dplyr::group_by(exp, gene) %>% 
-     dplyr::top_n(-1, wt = padj) %>%
-     dplyr::ungroup()
-
-RNAseq1_Y664F_vs_WT.genes <- 
-  dplyr::group_by(RNAseq1_Y664F_vs_WT, gene) %>%
-  dplyr::mutate(exps = n_distinct(as.character(exp))) %>%
-  dplyr::ungroup() %>%
-  dplyr::filter(abs(log2FoldChange) >= 2 & abs(log2FoldChange) <= 14 & exps == n_distinct(exp) & padj <= 1e-03) %>%
-  dplyr::arrange(padj) %>%
-  dplyr::pull(gene) %>%
-  unique()
-
-plot.data <- dplyr::filter(RNAseq1_Y664F_vs_WT, gene %in% RNAseq1_Y664F_vs_WT.genes) %>% dplyr::arrange(padj) %>% dplyr::mutate(gene = factor(gene, levels = rev(unique(gene)))) 
-
-report$RNAseq1.pval.WT_Y664F_vs_WT <- 
-  make_square(ggplot(plot.data, aes(x = exp, y = gene, fill = log2FoldChange)) +
-                theme_bw() +
-                geom_tile(color="gray50",size=0.6) + 
-                scale_fill_gradient2(name = 'Fold change', low="navy", mid="white", high="red", midpoint=0, limits=c(-10, 10), breaks = c(-10, -5, 0, 5, 10)) + 
-                scale_y_discrete(expand=c(0,0)) +
-                scale_x_discrete(expand=c(0,0)) +
-                labs(x='', y = '') +
-                theme(axis.text.x = element_text(angle = 90, hjust = 1),
-                      panel.border = element_blank(), 
-                      panel.grid.major = element_blank(),
-                      panel.grid.minor = element_blank(), 
-                      axis.line = element_line(colour = "black"),
-                      legend.position="bottom") +
-                guides(fill=guide_colorbar(title.position = "top", barwidth=5)), fudge = 0.5)
-
-
-#--------------------------------------------------------------------------------------------------
-
 
 RNAseq1_WT_vs_earlyWT <- 
-  dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq1_WT_D9_vs_WT_D6),  exp = 'D9'),
-                   dplyr::mutate(data.frame(RNAseq1_WT_D12_vs_WT_D6), exp = 'D12'),
-                   dplyr::mutate(data.frame(RNAseq1_WT_D33_vs_WT_D6), exp = 'D33'),
-                   dplyr::mutate(data.frame(RNAseq1_WT_D63_vs_WT_D6), exp = 'D63')) %>%
-  dplyr::mutate(exp = factor(exp, levels = c('D9', 'D12', 'D33', 'D63'))) %>%
+  dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq1_WT_D9_vs_WT_D6),  exp = 'D9', timePoint = 'D9'),
+                   dplyr::mutate(data.frame(RNAseq1_WT_D12_vs_WT_D6), exp = 'D12', timePoint = 'D12'),
+                   dplyr::mutate(data.frame(RNAseq1_WT_D33_vs_WT_D6), exp = 'D33', timePoint = 'D33'),
+                   dplyr::mutate(data.frame(RNAseq1_WT_D63_vs_WT_D6), exp = 'D63', timePoint = 'D63')) %>%
   dplyr::filter(! is.na(padj)) %>%
   dplyr::group_by(exp, gene) %>% 
   dplyr::top_n(-1, wt = padj) %>%
   dplyr::ungroup()
 
-RNAseq1_WT_vs_earlyWT.genes <- subset(data.frame(RNAseq1_WT_D63_vs_WT_D6), padj <= 1e-25 & abs(log2FoldChange) >= 3 & abs(log2FoldChange) <= 14)$gene
-
-RNAseq1_WT_vs_earlyWT.genesForPathways <- subset(data.frame(RNAseq1_WT_D63_vs_WT_D6), padj <= 1e-10 & abs(log2FoldChange) >= 3 & abs(log2FoldChange) <= 14)$gene
-
-
-plot.data <- dplyr::filter(RNAseq1_WT_vs_earlyWT, gene %in% RNAseq1_WT_vs_earlyWT.genes) %>% dplyr::arrange(padj) %>% dplyr::mutate(gene = factor(gene, levels = rev(unique(gene)))) 
-
-report$RNAseq1.pval.WT_vs_earlyWT <- 
-  make_square(ggplot(plot.data, aes(x = exp, y = gene, fill = log2FoldChange)) +
-                theme_bw() +
-                geom_tile(color="gray50",size=0.6) + 
-                scale_fill_gradient2(name = 'Fold change', low="navy", mid="white", high="red", midpoint=0, limits=c(-8, 8), breaks = c(-8, -4, 0, 8, 4)) + 
-                scale_y_discrete(expand=c(0,0)) +
-                scale_x_discrete(expand=c(0,0)) +
-                labs(x='', y = '') +
-                theme(axis.text.x = element_text(angle = 90, hjust = 1),
-                      panel.border = element_blank(), 
-                      panel.grid.major = element_blank(),
-                      panel.grid.minor = element_blank(), 
-                      axis.line = element_line(colour = "black"),
-                      legend.position="bottom") +
-                guides(fill=guide_colorbar(title.position = "top", barwidth=5)), fudge = 0.5)
+RNAseq1_WT_vs_earlyWT.genes <- subset(data.frame(RNAseq1_WT_D63_vs_WT_D6), padj <= 1e-25 & abs(log2FoldChange) >= 3)$gene
+report$RNAseq1.pval.WT_vs_earlyWT <- createGeneListHeatMap(RNAseq1_WT_vs_earlyWT, RNAseq1_WT_vs_earlyWT.genes, 8)
 
 
-save.image(file='savePoints/sp2.RData')
-
-
-
-
-
+save(list = ls(all.names = TRUE), file = 'savePoints/sp1.RData', envir = .GlobalEnv, compress = TRUE, compression_level = 9)
 #--------------------------------------------------------------------------------------------------
 
 
 
-# Add entrez ids to the RNAseq data.
 
+
+
+# Add entrez and STRINGdb ids to the RNAseq data.
+#--------------------------------------------------------------------------------------------------
 ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl")
 
 ### mapping <- getBM(attributes = c("ensembl_gene_id", "hgnc_symbol", "entrezgene"), mart = ensembl)
@@ -718,24 +528,18 @@ mapping <- getBM(attributes = c("ensembl_gene_id", "hgnc_symbol", "entrezgene_id
 mapping$entrezgene <- mapping$entrezgene_id
 
 RNAseq1_WT_vs_earlyWT$ensembl     <- sub('\\.\\d+$', '', tx2gene[match(toupper(RNAseq1_WT_vs_earlyWT$gene),     toupper(tx2gene$gene_name)),]$gene_id)
-RNAseq1_Y664F_D9_vs_WT_D9$ensembl <- sub('\\.\\d+$', '', tx2gene[match(toupper(RNAseq1_Y664F_D9_vs_WT_D9$gene), toupper(tx2gene$gene_name)),]$gene_id)
 RNAseq2_WT_TrpM_vs_KD$ensembl     <- sub('\\.\\d+$', '', tx2gene[match(toupper(RNAseq2_WT_TrpM_vs_KD$gene),     toupper(tx2gene$gene_name)),]$gene_id)
 
 
+# (!) Here we reduce the data sets so that they can be annotated quicker.
 RNAseq1_WT_vs_earlyWT     <- subset(RNAseq1_WT_vs_earlyWT,     abs(log2FoldChange) >= 2 & padj <= 1e-3)
-RNAseq1_Y664F_D9_vs_WT_D9 <- subset(RNAseq1_Y664F_D9_vs_WT_D9, abs(log2FoldChange) >= 2 & padj <= 1e-3)
 RNAseq2_WT_TrpM_vs_KD     <- subset(RNAseq2_WT_TrpM_vs_KD,     abs(log2FoldChange) >= 2 & padj <= 1e-3)
 
-
-string_db <- STRINGdb$new( version = "10", species = 9606, score_threshold = 0, input_directory = report$STRINGdb_dataFiles)
 
 RNAseq1_WT_vs_earlyWT <- string_db$map(data.frame(RNAseq1_WT_vs_earlyWT), "gene", removeUnmappedRows = FALSE)
 i <- which(is.na(RNAseq1_WT_vs_earlyWT$STRING_id))
 RNAseq1_WT_vs_earlyWT[i,]$STRING_id <- report$string_db.alt.aliases[match(toupper(RNAseq1_WT_vs_earlyWT[i,]$gene), toupper(report$string_db.alt.aliases$ids)),]$STRING_id
 
-RNAseq1_Y664F_D9_vs_WT_D9 <- string_db$map(data.frame(RNAseq1_Y664F_D9_vs_WT_D9), "gene", removeUnmappedRows = FALSE)
-i <- which(is.na(RNAseq1_Y664F_D9_vs_WT_D9$STRING_id))
-RNAseq1_Y664F_D9_vs_WT_D9[i,]$STRING_id <- report$string_db.alt.aliases[match(toupper(RNAseq1_Y664F_D9_vs_WT_D9[i,]$gene), toupper(report$string_db.alt.aliases$ids)),]$STRING_id
 
 RNAseq2_WT_TrpM_vs_KD <- string_db$map(data.frame(RNAseq2_WT_TrpM_vs_KD), "gene", removeUnmappedRows = FALSE)
 i <- which(is.na(RNAseq2_WT_TrpM_vs_KD$STRING_id))
@@ -743,65 +547,34 @@ RNAseq2_WT_TrpM_vs_KD[i,]$STRING_id <- report$string_db.alt.aliases[match(touppe
 
 
 RNAseq1_WT_vs_earlyWT$entrezgene     <- mapping[match(RNAseq1_WT_vs_earlyWT$ensembl, mapping$ensembl_gene_id),]$entrezgene
-RNAseq1_Y664F_D9_vs_WT_D9$entrezgene <- mapping[match(RNAseq1_Y664F_D9_vs_WT_D9$ensembl, mapping$ensembl_gene_id),]$entrezgene
 RNAseq2_WT_TrpM_vs_KD$entrezgene     <- mapping[match(RNAseq2_WT_TrpM_vs_KD$ensembl, mapping$ensembl_gene_id),]$entrezgene
+
+
 
 
 # KEGG pathway enrichments
 #--------------------------------------------------------------------------------------------------
 # Detach the RMySQL package because it interferes with STRINGdb
 detach('package:RMySQL', unload = TRUE, character.only = TRUE)
-
-# Function which creates a table of enriched KEGG terms from associated STRINGdb protein ids.
-# The names of genes considered in the enrichments are provided and are listed with uppercase 
-# letters if the gene showed increased transcription levels and listed with lowercase letters 
-# if the gene showed decreased transcription levels.
-
-createKEGGenrichmentTable <- function(o){
-  e <- string_db$get_enrichment(o$STRING_id, category = 'KEGG', methodMT = "fdr", iea = FALSE)
-  e <- subset(e, pvalue_fdr <= 0.05)
-  e$geneListLength <- n_distinct(o$STRING_id)
-  
-  p <- string_db$get_term_proteins(e$term_id)
-  p <- p[p$STRING_id %in% o$STRING_id,]
-  
-  o.up   <- subset(o, log2FoldChange >= 0)$STRING_id
-  o.down <- subset(o, log2FoldChange < 0)$STRING_id
-  
-  p <- dplyr::rowwise(p) %>% dplyr::mutate(preferred_name2 = ifelse(STRING_id %in% o.up, toupper(preferred_name), tolower(preferred_name))) %>% dplyr::ungroup()
-  p <- dplyr::group_by(p, term_id) %>% dplyr::summarise(genes = paste0(sort(preferred_name2), collapse = ', ')) %>% dplyr::ungroup()
-  dplyr::left_join(e, p, by = 'term_id')
-}
-
-
-# Function which creates KEGG schematics color coded by gene trascription fold changes.
-
-createKEGGschematics <- function(o, schematicPrefix = 'exp', pathways = NA){
-  foldchanges = unname(o$log2FoldChange)
-  names(foldchanges) = o$entrezgene
-  #browser()
-  pathview(gene.data=foldchanges, pathway.id = pathways, species="hsa", out.suffix = schematicPrefix)
-
-  if(! dir.exists('KEGG.schematics')) dir.create('KEGG.schematics')
-  system(paste('mv', paste(list.files(pattern = schematicPrefix), collapse = ' '), 'KEGG.schematics/'))
-  unlink(list.files(pattern = paste0('hsa', pathways, collapse = '|')))
-}
-
+# 
 
 # WT_D9_vs_KD_D9 -- KEGG enrichment analysis with STRINGdb.  
 report$WT_D9_vs_KD_D9.KEGG <- createKEGGenrichmentTable(subset(RNAseq2_WT_TrpM_vs_KD, exp == 'WT D9' & 
                                                                  ! is.na(log2FoldChange) &  
                                                                  ! is.na(STRING_id) & 
                                                                  padj <= 1e-5 & 
-                                                                 abs(log2FoldChange) >= 2 &
-                                                                 abs(log2FoldChange) <= 14))
+                                                                 abs(log2FoldChange) >= 2))
+
+report$WT_D9_vs_KD_D9.KEGG.plot <- termEnrichmentPlot(report$WT_D9_vs_KD_D9.KEGG, 15, 'WT vs. KD Day 9')
+
+
+
 
 createKEGGschematics(subset(RNAseq2_WT_TrpM_vs_KD, exp == 'WT D9' & 
                               ! is.na(log2FoldChange) &  
                               ! is.na(entrezgene) & 
                               padj <= 1e-5 & 
-                              abs(log2FoldChange) >= 2 &
-                              abs(log2FoldChange) <= 14),
+                              abs(log2FoldChange) >= 2),
                      schematicPrefix = 'WT_D9_vs_KD_D9',
                      pathways = report$WT_D9_vs_KD_D9.KEGG[1:10,]$term_id)
 

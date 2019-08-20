@@ -47,6 +47,78 @@ timePoint2numeric <- function(x, interval = 'days'){
 }
 
 
+termEnrichmentPlot <- function(d, n, t){
+  d <- dplyr::arrange(d, pvalue_fdr)[1:n,]
+  message(min(d$pvalue_fdr), ' - ', max(d$pvalue_fdr))
+  # d$label <- paste0(d$term_description, '\n', signif(d$pvalue_fdr, digits=2))
+  d$label <- d$term_description
+  d <- dplyr::select(d, label, genesUP, genesDOWN) 
+  d$genesDOWN <- d$genesDOWN * -1
+  labels <- rev(unique(d$label))
+  d <- tidyr::gather(d, key='var', value='val', genesUP, genesDOWN)
+  d$label <- factor(d$label, levels = labels)
+  ggplot(d, aes(label, val, fill = var)) + 
+    theme_bw() +
+    geom_bar(stat='identity') + 
+    scale_fill_manual(values = c('dodgerblue2', 'red')) +
+    coord_flip() +
+    labs(x = '', y = 'Genes') +
+    theme(text = element_text(size=14), panel.border = element_blank(), panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+    guides(fill=FALSE) +
+    ggtitle(t)
+}
+
+
+
+
+# Function which creates a table of enriched KEGG terms from associated STRINGdb protein ids.
+# The names of genes considered in the enrichments are provided and are listed with uppercase 
+# letters if the gene showed increased transcription levels and listed with lowercase letters 
+# if the gene showed decreased transcription levels.
+
+createKEGGenrichmentTable <- function(o){
+  e <- string_db$get_enrichment(o$STRING_id, category = 'KEGG', methodMT = "fdr", iea = FALSE)
+  e <- subset(e, pvalue_fdr <= 0.05)
+  
+  # Retrieve all gene names for returned pathway ids.
+  p <- string_db$get_term_proteins(e$term_id)
+  
+  # Limit pathway genes to genes in the provided data frame.
+  p <- p[p$STRING_id %in% o$STRING_id,]
+  
+  # Create vectors of up and down regulated genes (STRINGdb ids).
+  o.up   <- subset(o, log2FoldChange >= 0)$STRING_id
+  o.down <- subset(o, log2FoldChange < 0)$STRING_id
+  
+  # Change capitalization of gene name based on up or down regulation.
+  p <- dplyr::rowwise(p) %>% dplyr::mutate(preferred_name2 = ifelse(STRING_id %in% o.up, toupper(preferred_name), tolower(preferred_name))) %>% dplyr::ungroup()
+  
+  p <- dplyr::group_by(p, term_id) %>% 
+       dplyr::summarise(genesUP   = sum(STRING_id %in% o.up),
+                        genesDOWN = sum(STRING_id %in% o.down),
+                        genes = paste0(sort(preferred_name2), collapse = ', ')) %>% 
+       dplyr::ungroup()
+  dplyr::left_join(e, p, by = 'term_id')
+}
+
+
+# Function which creates KEGG schematics color coded by gene trascription fold changes.
+
+createKEGGschematics <- function(o, schematicPrefix = 'exp', pathways = NA){
+  foldchanges = unname(o$log2FoldChange)
+  names(foldchanges) = o$entrezgene
+  #browser()
+  pathview(gene.data=foldchanges, pathway.id = pathways, species="hsa", out.suffix = schematicPrefix)
+  
+  if(! dir.exists('KEGG.schematics')) dir.create('KEGG.schematics')
+  system(paste('mv', paste(list.files(pattern = schematicPrefix), collapse = ' '), 'KEGG.schematics/'))
+  unlink(list.files(pattern = paste0('hsa', pathways, collapse = '|')))
+}
+
+
+
+
 importSalmon <- function(salmonFiles){
   library(tximport)
   
