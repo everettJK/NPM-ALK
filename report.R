@@ -1,131 +1,28 @@
-library(tidyverse)
-library(parallel)
-library(RMySQL)
-library(gt23)
-library(parallel)
+library(GenomicRanges)
 library(STRINGdb)
 library(biomaRt)
-library(stringr)
 library(DESeq2)
-library(gtools)
-library(pathview)
 library(xlsx)
+library(gtools)
+library(tidyverse)
+library(pathview)
 source('./lib.R')
 options(stringsAsFactors = FALSE, useFancyQuotes = FALSE) 
+ppNum <- function (n)  format(n, big.mark = ",", scientific = FALSE, trim = TRUE)
+load('data/data.RData')
 
 # Create a report list object to store data need for final report.
 report <- list()
-report$CPUs               <- 40
 report$STRINGdb_dataFiles <- 'data/STRINGdb' # Created on the fly if not defined.
-report$HGNC_dataFile      <- 'data/HGNC.txt'
-report$salmonCommand      <- '/home/everett/software/salmon-0.11.3/bin/salmon quant -p8 -i /home/everett/data/sequenceDatabases/Salmon/GRCh38.gencode29/ -l A'
-report$runSalmonRun1      <- FALSE
-report$runSalmonRun2      <- FALSE
 
-# Create HGNC aliases for better KEGG and GO enrichments.
-#--------------------------------------------------------------------------------------------------
-
-cluster <- makeCluster(report$CPUs)
 
 # STRINGdb will be used for pathway and GO term enrichment.
-# This approach is limited by the mapping of transcripts to genes and the mapping of genes to annotations.
-# STRINGdb understands a number of gene aliases but the alias list is incompleted.
-# Here we use the previous gene ids and gene synonyms provided by HGNC to expand STRINGdb's gene alias -> protein mappings.
-
-HGNC <- read.table(report$HGNC_dataFile, sep = '\t', comment.char = '', quote = '', header = TRUE)
-
 string_db <- STRINGdb$new(version="10", species=9606, score_threshold=0, input_directory = report$STRINGdb_dataFiles)
 
 
-# For each vector of gene ids, determine which ones are in the current STRINGdb alias list.
-# If any of the ids for a gene are in the alias list, assoicate all ids with the STRINGdb protein id
-# but only if all of the aliases only return a single string ID.
-
-if(! file.exists('data/string_db.alt.aliases.rds')){
-
-  HGNC.ids <- 
-    dplyr::rowwise(HGNC) %>%
-    dplyr::summarise(ids = list(gsub('\\s', '', 
-                                     toupper(c(Approved.Symbol, 
-                                               unlist(strsplit(Previous.Symbols, ',')), 
-                                               unlist(strsplit(Synonyms, ','))))))) %>%
-    dplyr::ungroup() %>%
-    dplyr::mutate(n = ntile(1:n(), report$CPUs))
-  
-  STRINGdb_dataFiles <- report$STRINGdb_dataFiles
-  clusterExport(cluster, varlist = c('STRINGdb_dataFiles', 'HGNC.ids'))
-
-  report$string_db.alt.aliases <- bind_rows(parLapply(cluster, split(HGNC.ids, HGNC.ids$n), function(x){
-    library(STRINGdb)
-    library(dplyr)
-    remove_NA <- function(x) x[!is.na(x)]
-    
-    string_db <- STRINGdb$new(version = "10", species = 9606, score_threshold = 0, input_directory = STRINGdb_dataFiles)
-    string_db.aliases <- string_db$get_aliases()
-    string_db.aliases$alias <- gsub('\\s', '', toupper(string_db.aliases$alias))
-    
-    dplyr::rowwise(x) %>%
-    dplyr::mutate(stringIDS = list(unique(remove_NA(string_db.aliases[match(unlist(ids), string_db.aliases$alias),]$STRING_id)))) %>%
-    dplyr::mutate(STRING_id = ifelse(length(stringIDS) == 1, unlist(stringIDS), NA)) %>%
-    dplyr::ungroup() %>%
-    dplyr::select(ids, STRING_id) %>% 
-    dplyr::filter(! is.na(STRING_id)) %>% 
-    tidyr::unnest(ids)
-  }))
-
-  saveRDS(report$string_db.alt.aliases, file = 'data/string_db.alt.aliases.rds')
-} else {
-  report$string_db.alt.aliases <- readRDS('data/string_db.alt.aliases.rds')
-}
-
-
-# Run SALMON data set1 if requested.
-if(report$runSalmonRun1){
-  if(! dir.exists('salmonOutput')) dir.create('salmonOutput')
-  salmonRuns1 <- read.table('data/RNAseq_data1.tsv', header = TRUE, sep = '\t') %>%
-                 dplyr::rowwise() %>% 
-                 dplyr::select(filename, barcode) %>% 
-                 dplyr::mutate(command = paste0(report$salmonCommand, 
-                                         ' -1 ', list.files('data/RNAseq_data1', pattern = barcode, full.names = TRUE)[1], 
-                                         ' -2 ', list.files('data/RNAseq_data1', pattern = barcode, full.names = TRUE)[2],
-                                         ' -o salmonOutput/', filename)) %>%
-                 dplyr::ungroup()
-  invisible(sapply(salmonRuns1$command, system))
-}
-
-
-# Run SALMON data set2 if requested.
-if(report$runSalmonRun2){
-  if(! dir.exists('salmonOutput')) dir.create('salmonOutput')
-  salmonRuns2 <- read.table('data/RNAseq_data2.tsv', header = TRUE, sep = '\t') %>%
-                 dplyr::rowwise() %>% 
-                 dplyr::mutate(command = paste0(report$salmonCommand, 
-                                                ' -r ', dataPath,
-                                                ' -o salmonOutput/', sample)) %>%
-                 dplyr::ungroup()
-  invisible(sapply(salmonRuns2$command, system))
-}
-
-
-# Import Salmon RNAseq results.
-#--------------------------------------------------------------------------------------------------
-
-# Import and name salmon output files.
-# The two RNAseq runs, which used different strategies, can be separated by participant numbers.
-
-files <- list.files(path = 'salmonOutput', pattern = 'quant.sf', recursive = TRUE, full.names = TRUE)
-names(files) <- unlist(lapply(strsplit(files, '\\/'), '[[', 2))
-
-salmon1.files <- files[as.integer(str_extract(names(files), '\\d+$')) <= 3]
-
-# Exclude all day 9 results from subject 4 per Jan's instructions.
-salmon2.files <- files[as.integer(str_extract(names(files), '\\d+$')) > 3]
-salmon2.files <- salmon2.files[! grepl('D9_don4', names(salmon2.files))]
-
-
-# Create RNAseq data import objects.
-salmon1.txi <- importSalmon(salmon1.files)
-salmon2.txi <- importSalmon(salmon2.files)
+# Read in a list of gene aliases created from HGNC to expand STRINGdb's annotations.
+# This data file is created in data_import.R.
+report$string_db.alt.aliases <- readRDS('data/string_db.alt.aliases.rds')
 
 
 # Create DEseq2 data objects which can be used to retrieve counts and create contrasts.
@@ -134,21 +31,21 @@ salmon2.ddsTxi <- processSalmon(salmon2.txi)
 
 
 
-
 # RNAseq PCA plots
 #--------------------------------------------------------------------------------------------------
 
-# First SALMON run PCA.
+# First RNAseq/SALMON run PCA.
+salmon1.rld     <- rlog(salmon1.ddsTxi)  # (Slow) Transform count data with regularized logarithm which returns log2 data normalized to library size. 
+salmon1.rlogMat <- assay(salmon1.rld)    # assay() extracts the matrix of normalized values.
 
 
-salmon1.rld <- rlog(salmon1.ddsTxi) # Transform count data with regularized logarithm which returns log2 data normalized to library size. 
-salmon1.rlogMat <- assay(salmon1.rld) # assay() extracts the matrix of normalized values.
+# Exclude outlier data points which were not caught by SALMON.
+# Threshold of 15x determined by reviewing fold change vs. normalized count plots.
+i <- unname(apply(salmon1.rlogMat, 1, function(x) all(x < 14))) 
+salmon1.pca <- prcomp(t(salmon1.rlogMat[i,]), scale = FALSE, center = TRUE)
 
-# i <- unname(apply(salmon1.rlogMat, 1, function(x) all(x < 14))) # Exclude outlier data points which were not caught by SALMON.
-# salmon1.pca <- prcomp(t(salmon1.rlogMat[i,]), scale = FALSE, center = TRUE)
-salmon1.pca <- prcomp(t(salmon1.rlogMat), scale = FALSE, center = TRUE)
 
-# Use the 'genotype_timePoint_donor' formatted data points to extract data for the plots
+# Use the 'genotype_timePoint_donor' formatted data points to extract data for the plots.
 salmon1.pca.plotData          <- data.frame(s = row.names(salmon1.pca$x), x = salmon1.pca$x[,1], y = salmon1.pca$x[,2], z = salmon1.pca$x[,3])
 salmon1.pca.plotData$genotype <- do.call(rbind, strsplit(salmon1.pca.plotData$s, '_'))[,1]
 salmon1.pca.plotData$day      <- do.call(rbind, strsplit(salmon1.pca.plotData$s, '_'))[,2]
@@ -158,19 +55,23 @@ salmon1.pca.plotData          <- salmon1.pca.plotData[mixedorder(as.character(sa
 salmon1.pca.plotData$day      <- factor(salmon1.pca.plotData$day, levels = unique(salmon1.pca.plotData$day))
 salmon1.pca.plotData$genotype <- factor(salmon1.pca.plotData$genotype, levels = c('none', 'KD', 'WT', 'Y664F'))
 
-report$salmon1.pca.plot <- 
+report$salmon1.pca.plot1 <- 
   ggplot(salmon1.pca.plotData, aes(x=x, y=y, color = genotype, shape = day, label = subject)) +
   theme_bw() +
   geom_point(size = 4, stroke = 1.5) +
   scale_shape_manual(values = 21:25) +
-  geom_text(size = 5, nudge_x = 5, nudge_y = 5, show.legend = FALSE) +
-  scale_color_manual(values=c('red', 'blue', 'green4', 'black')) +
+  scale_color_manual(values=c('black', 'red', 'dodgerblue2', 'green4')) +
   labs(x = paste0('PC1 (', sprintf("%.2f", summary(salmon1.pca)$importance[3,][1] * 100), '%)'),
-       y = paste0('PC2 (', sprintf("%.2f", (summary(salmon1.pca)$importance[3,][2] - summary(salmon1.pca)$importance[3,][1])  * 100), '%)'))
+       y = paste0('PC2 (', sprintf("%.2f", (summary(salmon1.pca)$importance[3,][2] - summary(salmon1.pca)$importance[3,][1])  * 100), '%)')) +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
+
+ggsave(report$salmon1.pca.plot1, file = 'paper_figures_and_tables/RNAseq1_with_Y664F.pdf')
 
 
-# Alternative plots
-salmon1.rlogMat.noY664F <- salmon1.rlogMat[, - grep('Y664F', colnames(salmon1.rlogMat))]
+
+# WT only plot.
+salmon1.rlogMat.noY664F <- salmon1.rlogMat[, -grep('Y664F', colnames(salmon1.rlogMat))]
 salmon1.noY664F.pca <- prcomp(t(salmon1.rlogMat.noY664F), scale = FALSE, center = TRUE)
 
 salmon1.pca.plotData2          <- data.frame(s = row.names(salmon1.noY664F.pca$x), x = salmon1.noY664F.pca$x[,1], y = salmon1.noY664F.pca$x[,2], z = salmon1.noY664F.pca$x[,3])
@@ -195,30 +96,21 @@ report$salmon1.pca.plot2 <-
 
 ggsave(report$salmon1.pca.plot2, file = 'paper_figures_and_tables/RNAseq1_no_Y664F.pdf')
 
-report$salmon1.pca.plot3 <- 
-  ggplot(salmon1.pca.plotData, aes(x=x, y=y, color = genotype, shape = day, label = subject)) +
-  theme_bw() +
-  geom_point(size = 4, stroke = 1.5) +
-  scale_shape_manual(values = 21:25) +
-  scale_color_manual(values=c('black', 'red', 'dodgerblue2', 'green4')) +
-  labs(x = paste0('PC1 (', sprintf("%.2f", summary(salmon1.pca)$importance[3,][1] * 100), '%)'),
-       y = paste0('PC2 (', sprintf("%.2f", (summary(salmon1.pca)$importance[3,][2] - summary(salmon1.pca)$importance[3,][1])  * 100), '%)')) +
-  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
 
-ggsave(report$salmon1.pca.plot3, file = 'paper_figures_and_tables/RNAseq1_with_Y664F.pdf')
+
+
 
 # Second SALMON run PCA.
+#--------------------------------------------------------------------------------------------------
 
 # Transform the DESeq dataset into fold change values for each transcript.
-salmon2.rld <- rlog(salmon2.ddsTxi)    # Transform count data with regularized logarithm which returns log2 data normalized to library size.
+salmon2.rld     <- rlog(salmon2.ddsTxi)    # Transform count data with regularized logarithm which returns log2 data normalized to library size.
 salmon2.rlogMat <- assay(salmon2.rld)  # assay() extracts the matrix of normalized values.
 
 
 # Perform principle component analysis.
-# i <- unname(apply(salmon2.rlogMat, 1, function(x) all(x < 14)))
-#salmon2.pca <- prcomp(t(salmon2.rlogMat[i,]), scale = FALSE, center = TRUE)
-salmon2.pca <- prcomp(t(salmon2.rlogMat), scale = FALSE, center = TRUE)
+i <- unname(apply(salmon2.rlogMat, 1, function(x) all(x < 14)))
+salmon2.pca <- prcomp(t(salmon2.rlogMat[i,]), scale = FALSE, center = TRUE)
 
 # Use the 'genotype_timePoint_donor' formatted data points to extract data for the plots
 salmon2.pca.plotData          <- data.frame(s = row.names(salmon2.pca$x), x = salmon2.pca$x[,1], y = salmon2.pca$x[,2], z = salmon2.pca$x[,3])
@@ -240,19 +132,6 @@ report$salmon2.pca.plot <-
   labs(x = paste0('PC1 (', sprintf("%.2f", summary(salmon1.pca)$importance[3,][1] * 100), '%)'),
        y = paste0('PC2 (', sprintf("%.2f", (summary(salmon1.pca)$importance[3,][2] - summary(salmon1.pca)$importance[3,][1])  * 100), '%)'))
 
-
-
-# Create tx2gene lookup table from all result files.
-# This will be used to add gene names to different contrasts.
-d <- bind_rows(lapply(c(salmon1.files, salmon2.files), function(f){
-  read.table(f, sep = '\t', header = TRUE, quote = '', comment.char = '')
-}))
-
-d$Name <- as.character(d$Name)
-d <- d[!duplicated(d$Name),]
-tx2gene <- data.frame(transcript_id = d$Name, 
-                      gene_id       = unlist(lapply(strsplit(d$Name, '\\|'), '[[', 2)), 
-                      gene_name     = unlist(lapply(strsplit(d$Name, '\\|'), '[[', 6)))
 
 
 # Convenience function to add gene names from tx2gene to contrasts by using transcript id row names as a lookup.
@@ -294,6 +173,7 @@ plotCounts(salmon2.ddsTxi, gene="ENSG00000165029.15", intgroup="repGrp")  # RNAs
 plotCounts(salmon2.ddsTxi, gene="ENSG00000080503.23", intgroup="repGrp")  # RNAseq2_WT_D9_vs_KD_D9 SMARCA2 padj 5e-88  fold change: -2
 plotCounts(salmon2.ddsTxi, gene="ENSG00000077080.9",  intgroup="repGrp")  # RNAseq2_WT_D9_vs_KD_D9 ACTL6B  padj NA     fold change: 0.9
 plotCounts(salmon2.ddsTxi, gene="ENSG00000117713.19", intgroup="repGrp")  # RNAseq2_WT_D9_vs_KD_D9 ARID1A  padj 0.001  fold change: -1
+
 
 # Big fold change from minority of samples showing large changes.
 plotCounts(salmon1.ddsTxi, gene="ENSG00000277067.4", intgroup="repGrp")  # RNAseq2_WT_D9_vs_KD_D9 ARID1A  padj 2.973e-07  fold change: 39
@@ -413,7 +293,7 @@ report$SWI_SNF_genes_RNAseq <- createGeneListHeatMap(g, unique(g$gene), 6)
 #--------------------------------------------------------------------------------------------------
 
 createVolcanoPlot <- function(RNAseq, title, file){
-  plot.data <- subset(data.frame(RNAseq), ! is.na(padj))
+  plot.data <- subset(data.frame(RNAseq), ! is.na(padj) & abs(log2FoldChange) <= 14)
   plot.data$class <- ifelse(plot.data$padj > 0.05, 'No significant change', ifelse(plot.data$log2FoldChange >= 0, 'Increased', 'Decreased'))
   plot.data$class <- factor(as.character(plot.data$class), levels = c('No significant change', 'Increased', 'Decreased'))
 
@@ -454,7 +334,7 @@ report$RNAseq1_WT_D63_vs_KD_D12_volcano <- createVolcanoPlot(RNAseq1_WT_D63_vs_K
 RNAseq1_Y664F_vs_WT <- 
   dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq1_Y664F_D9_vs_WT_D9),   exp = 'Y664F D9', timePoint = 'D9'),
                    dplyr::mutate(data.frame(RNAseq1_Y664F_D12_vs_WT_D12), exp = 'Y664F D12', timePoint = 'D12')) %>%
-  dplyr::filter(! is.na(padj)) %>%
+  dplyr::filter(! is.na(padj), abs(log2FoldChange) <= 14) %>%
   dplyr::group_by(exp, gene) %>% 
   dplyr::top_n(-1, wt = padj) %>%
   dplyr::ungroup()
@@ -475,7 +355,7 @@ RNAseq2_TrpM_vs_WT <-
   dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq2_TrpM_D6_vs_WT_D6), exp = 'D6', timePoint = 'D6'),
                    dplyr::mutate(data.frame(RNAseq2_TrpM_D9_vs_WT_D9), exp = 'D9', timePoint = 'D9')) %>%
      dplyr::mutate(exp = factor(exp, levels = c('D6', 'D9'))) %>%
-     dplyr::filter(! is.na(padj)) %>%
+     dplyr::filter(! is.na(padj), abs(log2FoldChange) <= 14) %>%
      dplyr::group_by(exp, gene) %>% 
      dplyr::top_n(-1, wt = padj) %>%
      dplyr::ungroup()
@@ -502,7 +382,7 @@ RNAseq1_WT_vs_earlyWT <-
                    dplyr::mutate(data.frame(RNAseq1_WT_D12_vs_WT_D6), exp = 'D12', timePoint = 'D12'),
                    dplyr::mutate(data.frame(RNAseq1_WT_D33_vs_WT_D6), exp = 'D33', timePoint = 'D33'),
                    dplyr::mutate(data.frame(RNAseq1_WT_D63_vs_WT_D6), exp = 'D63', timePoint = 'D63')) %>%
-  dplyr::filter(! is.na(padj)) %>%
+  dplyr::filter(! is.na(padj), abs(log2FoldChange) <= 14) %>%
   dplyr::group_by(exp, gene) %>% 
   dplyr::top_n(-1, wt = padj) %>%
   dplyr::ungroup()
@@ -510,9 +390,7 @@ RNAseq1_WT_vs_earlyWT <-
 RNAseq1_WT_vs_earlyWT.genes <- subset(data.frame(RNAseq1_WT_D63_vs_WT_D6), padj <= 1e-25 & abs(log2FoldChange) >= 3)$gene
 report$RNAseq1.pval.WT_vs_earlyWT <- createGeneListHeatMap(RNAseq1_WT_vs_earlyWT, RNAseq1_WT_vs_earlyWT.genes, 8)
 
-
 save(list = ls(all.names = TRUE), file = 'savePoints/sp1.RData', envir = .GlobalEnv, compress = TRUE, compression_level = 9)
-#--------------------------------------------------------------------------------------------------
 
 
 
@@ -546,6 +424,7 @@ i <- which(is.na(RNAseq2_WT_TrpM_vs_KD$STRING_id))
 RNAseq2_WT_TrpM_vs_KD[i,]$STRING_id <- report$string_db.alt.aliases[match(toupper(RNAseq2_WT_TrpM_vs_KD[i,]$gene), toupper(report$string_db.alt.aliases$ids)),]$STRING_id
 
 
+# Here we add entrezgene ids to the dataset for creating pathway views.
 RNAseq1_WT_vs_earlyWT$entrezgene     <- mapping[match(RNAseq1_WT_vs_earlyWT$ensembl, mapping$ensembl_gene_id),]$entrezgene
 RNAseq2_WT_TrpM_vs_KD$entrezgene     <- mapping[match(RNAseq2_WT_TrpM_vs_KD$ensembl, mapping$ensembl_gene_id),]$entrezgene
 
@@ -555,32 +434,33 @@ RNAseq2_WT_TrpM_vs_KD$entrezgene     <- mapping[match(RNAseq2_WT_TrpM_vs_KD$ense
 # KEGG pathway enrichments
 #--------------------------------------------------------------------------------------------------
 # Detach the RMySQL package because it interferes with STRINGdb
-detach('package:RMySQL', unload = TRUE, character.only = TRUE)
-# 
+# detach('package:RMySQL', unload = TRUE, character.only = TRUE)
+
 
 # WT_D9_vs_KD_D9 -- KEGG enrichment analysis with STRINGdb.  
 report$WT_D9_vs_KD_D9.KEGG <- createKEGGenrichmentTable(subset(RNAseq2_WT_TrpM_vs_KD, exp == 'WT D9' & 
                                                                  ! is.na(log2FoldChange) &  
                                                                  ! is.na(STRING_id) & 
                                                                  padj <= 1e-5 & 
-                                                                 abs(log2FoldChange) >= 2))
+                                                                 abs(log2FoldChange) >= 2 &
+                                                                 abs(log2FoldChange) <= 14))
 
 report$WT_D9_vs_KD_D9.KEGG.plot <- termEnrichmentPlot(report$WT_D9_vs_KD_D9.KEGG, 15, 'WT vs. KD Day 9')
 
 
-
-
+# (!) Creating KEGG pathway views is slow.Only run if they are not already present.
 createKEGGschematics(subset(RNAseq2_WT_TrpM_vs_KD, exp == 'WT D9' & 
                               ! is.na(log2FoldChange) &  
                               ! is.na(entrezgene) & 
                               padj <= 1e-5 & 
-                              abs(log2FoldChange) >= 2),
+                              abs(log2FoldChange) >= 2 &
+                              abs(log2FoldChange) <= 14),
                      schematicPrefix = 'WT_D9_vs_KD_D9',
                      pathways = report$WT_D9_vs_KD_D9.KEGG[1:10,]$term_id)
 
 
 
-# 
+
 report$TrpM_D9_vs_KD_D9.KEGG <- createKEGGenrichmentTable(subset(RNAseq2_WT_TrpM_vs_KD, exp == 'TrpM D9' & 
                                                                    ! is.na(log2FoldChange) &  
                                                                    ! is.na(STRING_id) & 
@@ -588,7 +468,10 @@ report$TrpM_D9_vs_KD_D9.KEGG <- createKEGGenrichmentTable(subset(RNAseq2_WT_TrpM
                                                                    abs(log2FoldChange) >= 2 &
                                                                    abs(log2FoldChange) <= 14))
 
+report$TrpM_D9_vs_KD_D9.KEGG.plot <- termEnrichmentPlot(report$TrpM_D9_vs_KD_D9.KEGG, 15, 'TrpM vs. KD Day 9')
 
+
+# (!) Creating KEGG pathway views is slow.Only run if they are not already present.
 createKEGGschematics(subset(RNAseq2_WT_TrpM_vs_KD, exp == 'TrpM D9' & 
                               ! is.na(log2FoldChange) &  
                               ! is.na(STRING_id) & 
@@ -607,6 +490,9 @@ report$WT_late_vs_WT_early.KEGG <- createKEGGenrichmentTable(subset(RNAseq1_WT_v
                                                                    padj <= 1e-5 & 
                                                                    abs(log2FoldChange) >= 2 &
                                                                    abs(log2FoldChange) <= 14))
+
+report$WT_late_vs_WT_early.KEGG.plot <- termEnrichmentPlot(report$WT_late_vs_WT_early.KEGG, 15, 'WT D63 vs D6')
+
 
 createKEGGschematics(subset(RNAseq1_WT_vs_earlyWT, exp == 'D63' & 
                               ! is.na(log2FoldChange) &  
@@ -642,29 +528,12 @@ report$TrpM_D9_vs_KD_D9.GO <- subset(report$TrpM_D9_vs_KD_D9.GO , pvalue_fdr <= 
 
 
 
-save.image(file='savePoints/sp3.RData')
-
 
 
 # Integration site data
 #-------------------------------------------------------------------------------------------------------
 
-# Read in sample data.
-invisible(sapply(dbListConnections(MySQL()), dbDisconnect))
-dbConn  <- dbConnect(MySQL(), group='specimen_management')
-samples <- dbGetQuery(dbConn, 'select * from gtsp where Trial="NPM_ALK"')
-dbDisconnect(dbConn)
-
-# Retrieve and standardize fragments, call intSites, calculate abundances, and annotate sites.
-report$intSites <- getDBgenomicFragments(samples = samples$SpecimenAccNum, 'specimen_management', 'intsites_miseq') %>%
-                   stdIntSiteFragments() %>%
-                   collapseReplicatesCalcAbunds() %>%
-                   annotateIntSites()
-
-
-save.image(file = 'savePoints/sp3.RData')
-
-
+report$intSites <- intSites
 report$intSites$genotype <- ifelse(grepl('Y664F', report$intSites$patient), 'Y664F', 'WT')
 
 
@@ -707,10 +576,6 @@ report$sampleAbundancePlots <- lapply(report$sampleAbundancePlotsData, function(
 })
 
 
-# Detach the RMySQL package because it interferes with STRINGdb
-detach('package:RMySQL', unload = TRUE, character.only = TRUE)
-
-
 # Create list of patients with multiple time points.
 report$subjectsWithMultTimePoints <- 
   dplyr::group_by(data.frame(report$intSites), patient) %>% 
@@ -723,7 +588,6 @@ report$subjectsWithMultTimePoints <-
 
 
 # Map STRINGdb ids 
-#string_db <- STRINGdb$new(version="10", species=9606, score_threshold=0, input_directory = report$STRINGdb_dataFiles)
 
 d <- string_db$map(data.frame(report$intSites), "nearestFeature", removeUnmappedRows = FALSE)
 i <- which(is.na(d$STRING_id));  message(paste0('gene ids not mapped to STRINGdb: ', round((length(i) / nrow(d))*100, 2), '%'))
@@ -735,6 +599,7 @@ report$intSites$STRING_id <- d$STRING_id
 
 # Create an integration frequency plot for WT subjects.
 library(ggrepel)
+
 report$preVspostFreqplot.WT <- preVsPostFreqPlot(subset(report$intSites, patient %in% c('pNA92', 'pNA93', 'pNA85')),
                                                  14, 
                                                  readRDS('data/humanOncoGenesList.rds'), 
@@ -759,7 +624,6 @@ report$intsites.LS_WT    <- subset(report$intSites, ! grepl('Y664F',patient) & p
 report$intsites.LS_Y664F <- subset(report$intSites, grepl('Y664F',patient) & patient %in% report$subjectsWithMultTimePoints)
 
 
-
 createUCSCintSiteAbundTrack(report$intSites$posid, report$intSites$estAbund, report$intSites$patient, title = 'All_samples', visbility = 1, outputFile = 'allSamples.ucsd')
 createUCSCintSiteAbundTrack(report$intsites.WT$posid, report$intsites.WT$estAbund, report$intsites.WT$patient, title = 'All_WT_samples', visbility = 0, outputFile = 'allWTsamples.ucsd')
 createUCSCintSiteAbundTrack(report$intsites.Y664F$posid, report$intsites.Y664F$estAbund, report$intsites.Y664F$patient, title = 'All_Y664F_samples', visbility = 0, outputFile = 'allY664Fsamples.ucsd')
@@ -767,9 +631,6 @@ system(paste('cat', paste(list.files(pattern = '*.ucsd'), collapse = ' '), '> NP
 system(paste0('scp NPM_ALK.ucsd  microb120:/usr/share/nginx/html/UCSC/everett/NPM_ALK/'))
 invisible(file.remove(list.files(pattern = '\\.ucsd$')))
 
-
-
-#--------------------------------------------------------------------------------------------------
 
 
 d <- data.frame(report$intSites)
@@ -957,5 +818,4 @@ report$genesFoundAcrossMultSubject <-
   dplyr::arrange(desc(n)) %>%
   dplyr::select(-n)
 
-save.image(file = 'savePoints/sp4.RData')
 saveRDS(report, file = 'report.rds')
