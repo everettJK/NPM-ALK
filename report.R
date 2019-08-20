@@ -6,12 +6,14 @@ library(xlsx)
 library(gtools)
 library(tidyverse)
 library(pathview)
+library(ggrepel)
+library(RColorBrewer)
 source('./lib.R')
 options(stringsAsFactors = FALSE, useFancyQuotes = FALSE) 
-ppNum <- function (n)  format(n, big.mark = ",", scientific = FALSE, trim = TRUE)
+write(c(date(), capture.output(sessionInfo())), file = 'sessionInfo.txt')
 load('data/data.RData')
 
-# Create a report list object to store data need for final report.
+# Create a report list object to store data needed for reports.
 report <- list()
 report$STRINGdb_dataFiles <- 'data/STRINGdb' # Created on the fly if not defined.
 
@@ -30,6 +32,20 @@ salmon1.ddsTxi <- processSalmon(salmon1.txi)
 salmon2.ddsTxi <- processSalmon(salmon2.txi)
 
 
+# Inspect RNAseq data and select genes to see relationships between counts and fold changes / p-values.
+# Cutting the data at +/- 15 fold change appears to be a reasonable means of excluding outliers not caught by DESeq2.
+plotMA(salmon1.ddsTxi, ylim = c(-15, 15))
+plotMA(salmon2.ddsTxi, ylim = c(-15, 15))
+plotCounts(salmon2.ddsTxi, gene="ENSG00000003147.18", intgroup="repGrp")  # ICA1    padj 1e-06    fold change:  2
+plotCounts(salmon2.ddsTxi, gene="ENSG00000063046.17", intgroup="repGrp")  # EIF4B   padj 2e-20    fold change: -2
+plotCounts(salmon2.ddsTxi, gene="ENSG00000165029.15", intgroup="repGrp")  # ABCA1   padj 8e-230   fold change:  7
+plotCounts(salmon2.ddsTxi, gene="ENSG00000080503.23", intgroup="repGrp")  # SMARCA2 padj 5e-88    fold change: -2
+plotCounts(salmon2.ddsTxi, gene="ENSG00000077080.9",  intgroup="repGrp")  # ACTL6B  padj NA       fold change: 0.9
+plotCounts(salmon2.ddsTxi, gene="ENSG00000117713.19", intgroup="repGrp")  # ARID1A  padj 0.001    fold change: -1
+plotCounts(salmon1.ddsTxi, gene="ENSG00000277067.4",  intgroup="repGrp")  # ARID1A  padj 2.97e-07 fold change: 39
+
+
+
 
 # RNAseq PCA plots
 #--------------------------------------------------------------------------------------------------
@@ -41,11 +57,11 @@ salmon1.rlogMat <- assay(salmon1.rld)    # assay() extracts the matrix of normal
 
 # Exclude outlier data points which were not caught by SALMON.
 # Threshold of 15x determined by reviewing fold change vs. normalized count plots.
-i <- unname(apply(salmon1.rlogMat, 1, function(x) all(x < 14))) 
+i <- unname(apply(salmon1.rlogMat, 1, function(x) all(x < 15))) 
 salmon1.pca <- prcomp(t(salmon1.rlogMat[i,]), scale = FALSE, center = TRUE)
 
 
-# Use the 'genotype_timePoint_donor' formatted data points to extract data for the plots.
+# Use the 'genotype_timePoint_donor' formatted data points to extract data for plots.
 salmon1.pca.plotData          <- data.frame(s = row.names(salmon1.pca$x), x = salmon1.pca$x[,1], y = salmon1.pca$x[,2], z = salmon1.pca$x[,3])
 salmon1.pca.plotData$genotype <- do.call(rbind, strsplit(salmon1.pca.plotData$s, '_'))[,1]
 salmon1.pca.plotData$day      <- do.call(rbind, strsplit(salmon1.pca.plotData$s, '_'))[,2]
@@ -109,10 +125,11 @@ salmon2.rlogMat <- assay(salmon2.rld)  # assay() extracts the matrix of normaliz
 
 
 # Perform principle component analysis.
-i <- unname(apply(salmon2.rlogMat, 1, function(x) all(x < 14)))
+i <- unname(apply(salmon2.rlogMat, 1, function(x) all(x < 15)))
 salmon2.pca <- prcomp(t(salmon2.rlogMat[i,]), scale = FALSE, center = TRUE)
 
-# Use the 'genotype_timePoint_donor' formatted data points to extract data for the plots
+
+# Use the 'genotype_timePoint_donor' formatted data points to extract data for plots.
 salmon2.pca.plotData          <- data.frame(s = row.names(salmon2.pca$x), x = salmon2.pca$x[,1], y = salmon2.pca$x[,2], z = salmon2.pca$x[,3])
 salmon2.pca.plotData$genotype <- do.call(rbind, strsplit(salmon2.pca.plotData$s, '_'))[,1]
 salmon2.pca.plotData$day      <- do.call(rbind, strsplit(salmon2.pca.plotData$s, '_'))[,2]
@@ -131,7 +148,6 @@ report$salmon2.pca.plot <-
   scale_color_manual(values=c('blue', 'green4', 'darkorange')) +
   labs(x = paste0('PC1 (', sprintf("%.2f", summary(salmon1.pca)$importance[3,][1] * 100), '%)'),
        y = paste0('PC2 (', sprintf("%.2f", (summary(salmon1.pca)$importance[3,][2] - summary(salmon1.pca)$importance[3,][1])  * 100), '%)'))
-
 
 
 # Convenience function to add gene names from tx2gene to contrasts by using transcript id row names as a lookup.
@@ -166,25 +182,14 @@ RNAseq2_TrpM_D9_vs_KD_D9        <- addGeneNamesToContrast(results(salmon2.ddsTxi
 RNAseq2_TrpM_D9_vs_WT_D9        <- addGeneNamesToContrast(results(salmon2.ddsTxi, contrast=c("repGrp","TrpM_D9","WT_D9")))
 
 
-# Inspect select genes to see relationships between counts and fold changes / p-values.
-plotCounts(salmon2.ddsTxi, gene="ENSG00000003147.18", intgroup="repGrp")  # RNAseq2_WT_D9_vs_KD_D9 ICA1    padj 1e-06  fold change:  2
-plotCounts(salmon2.ddsTxi, gene="ENSG00000063046.17", intgroup="repGrp")  # RNAseq2_WT_D9_vs_KD_D9 EIF4B   padj 2e-20  fold change: -2
-plotCounts(salmon2.ddsTxi, gene="ENSG00000165029.15", intgroup="repGrp")  # RNAseq2_WT_D9_vs_KD_D9 ABCA1   padj 8e-230 fold change:  7
-plotCounts(salmon2.ddsTxi, gene="ENSG00000080503.23", intgroup="repGrp")  # RNAseq2_WT_D9_vs_KD_D9 SMARCA2 padj 5e-88  fold change: -2
-plotCounts(salmon2.ddsTxi, gene="ENSG00000077080.9",  intgroup="repGrp")  # RNAseq2_WT_D9_vs_KD_D9 ACTL6B  padj NA     fold change: 0.9
-plotCounts(salmon2.ddsTxi, gene="ENSG00000117713.19", intgroup="repGrp")  # RNAseq2_WT_D9_vs_KD_D9 ARID1A  padj 0.001  fold change: -1
-
-
-# Big fold change from minority of samples showing large changes.
-plotCounts(salmon1.ddsTxi, gene="ENSG00000277067.4", intgroup="repGrp")  # RNAseq2_WT_D9_vs_KD_D9 ARID1A  padj 2.973e-07  fold change: 39
 
 
 # Heatmaps
 #--------------------------------------------------------------------------------------------------
 
 RNAseq1_WT_vs_KD <- 
-  dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq1_WT_D6_vs_KD_D6),   exp = 'WT D6', timePoint = 'D6'),
-                   dplyr::mutate(data.frame(RNAseq1_WT_D9_vs_KD_D9),   exp = 'WT D9', timePoint = 'D9'),
+  dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq1_WT_D6_vs_KD_D6),   exp = 'WT D6',  timePoint = 'D6'),
+                   dplyr::mutate(data.frame(RNAseq1_WT_D9_vs_KD_D9),   exp = 'WT D9',  timePoint = 'D9'),
                    dplyr::mutate(data.frame(RNAseq1_WT_D12_vs_KD_D12), exp = 'WT D12', timePoint = 'D12'),
                    dplyr::mutate(data.frame(RNAseq1_WT_D33_vs_KD_D12), exp = 'WT D33', timePoint = 'D33'),
                    dplyr::mutate(data.frame(RNAseq1_WT_D63_vs_KD_D12), exp = 'WT D63', timePoint = 'D63')) %>%
@@ -293,7 +298,7 @@ report$SWI_SNF_genes_RNAseq <- createGeneListHeatMap(g, unique(g$gene), 6)
 #--------------------------------------------------------------------------------------------------
 
 createVolcanoPlot <- function(RNAseq, title, file){
-  plot.data <- subset(data.frame(RNAseq), ! is.na(padj) & abs(log2FoldChange) <= 14)
+  plot.data <- subset(data.frame(RNAseq), ! is.na(padj) & abs(log2FoldChange) <= 15)
   plot.data$class <- ifelse(plot.data$padj > 0.05, 'No significant change', ifelse(plot.data$log2FoldChange >= 0, 'Increased', 'Decreased'))
   plot.data$class <- factor(as.character(plot.data$class), levels = c('No significant change', 'Increased', 'Decreased'))
 
@@ -334,7 +339,7 @@ report$RNAseq1_WT_D63_vs_KD_D12_volcano <- createVolcanoPlot(RNAseq1_WT_D63_vs_K
 RNAseq1_Y664F_vs_WT <- 
   dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq1_Y664F_D9_vs_WT_D9),   exp = 'Y664F D9', timePoint = 'D9'),
                    dplyr::mutate(data.frame(RNAseq1_Y664F_D12_vs_WT_D12), exp = 'Y664F D12', timePoint = 'D12')) %>%
-  dplyr::filter(! is.na(padj), abs(log2FoldChange) <= 14) %>%
+  dplyr::filter(! is.na(padj), abs(log2FoldChange) <= 15) %>%
   dplyr::group_by(exp, gene) %>% 
   dplyr::top_n(-1, wt = padj) %>%
   dplyr::ungroup()
@@ -355,7 +360,7 @@ RNAseq2_TrpM_vs_WT <-
   dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq2_TrpM_D6_vs_WT_D6), exp = 'D6', timePoint = 'D6'),
                    dplyr::mutate(data.frame(RNAseq2_TrpM_D9_vs_WT_D9), exp = 'D9', timePoint = 'D9')) %>%
      dplyr::mutate(exp = factor(exp, levels = c('D6', 'D9'))) %>%
-     dplyr::filter(! is.na(padj), abs(log2FoldChange) <= 14) %>%
+     dplyr::filter(! is.na(padj), abs(log2FoldChange) <= 15) %>%
      dplyr::group_by(exp, gene) %>% 
      dplyr::top_n(-1, wt = padj) %>%
      dplyr::ungroup()
@@ -378,11 +383,11 @@ report$RNAseq2.pval.TrpM_vs_WT <- createGeneListHeatMap(RNAseq2_TrpM_vs_WT, RNAs
 #--------------------------------------------------------------------------------------------------
 
 RNAseq1_WT_vs_earlyWT <- 
-  dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq1_WT_D9_vs_WT_D6),  exp = 'D9', timePoint = 'D9'),
+  dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq1_WT_D9_vs_WT_D6),  exp = 'D9',  timePoint = 'D9'),
                    dplyr::mutate(data.frame(RNAseq1_WT_D12_vs_WT_D6), exp = 'D12', timePoint = 'D12'),
                    dplyr::mutate(data.frame(RNAseq1_WT_D33_vs_WT_D6), exp = 'D33', timePoint = 'D33'),
                    dplyr::mutate(data.frame(RNAseq1_WT_D63_vs_WT_D6), exp = 'D63', timePoint = 'D63')) %>%
-  dplyr::filter(! is.na(padj), abs(log2FoldChange) <= 14) %>%
+  dplyr::filter(! is.na(padj), abs(log2FoldChange) <= 15) %>%
   dplyr::group_by(exp, gene) %>% 
   dplyr::top_n(-1, wt = padj) %>%
   dplyr::ungroup()
@@ -410,8 +415,8 @@ RNAseq2_WT_TrpM_vs_KD$ensembl     <- sub('\\.\\d+$', '', tx2gene[match(toupper(R
 
 
 # (!) Here we reduce the data sets so that they can be annotated quicker.
-RNAseq1_WT_vs_earlyWT     <- subset(RNAseq1_WT_vs_earlyWT,     abs(log2FoldChange) >= 2 & padj <= 1e-3)
-RNAseq2_WT_TrpM_vs_KD     <- subset(RNAseq2_WT_TrpM_vs_KD,     abs(log2FoldChange) >= 2 & padj <= 1e-3)
+RNAseq1_WT_vs_earlyWT     <- subset(RNAseq1_WT_vs_earlyWT, abs(log2FoldChange) >= 2 & padj <= 1e-3)
+RNAseq2_WT_TrpM_vs_KD     <- subset(RNAseq2_WT_TrpM_vs_KD, abs(log2FoldChange) >= 2 & padj <= 1e-3)
 
 
 RNAseq1_WT_vs_earlyWT <- string_db$map(data.frame(RNAseq1_WT_vs_earlyWT), "gene", removeUnmappedRows = FALSE)
@@ -443,7 +448,7 @@ report$WT_D9_vs_KD_D9.KEGG <- createKEGGenrichmentTable(subset(RNAseq2_WT_TrpM_v
                                                                  ! is.na(STRING_id) & 
                                                                  padj <= 1e-5 & 
                                                                  abs(log2FoldChange) >= 2 &
-                                                                 abs(log2FoldChange) <= 14))
+                                                                 abs(log2FoldChange) <= 15))
 
 report$WT_D9_vs_KD_D9.KEGG.plot <- termEnrichmentPlot(report$WT_D9_vs_KD_D9.KEGG, 15, 'WT vs. KD Day 9')
 
@@ -454,54 +459,10 @@ createKEGGschematics(subset(RNAseq2_WT_TrpM_vs_KD, exp == 'WT D9' &
                               ! is.na(entrezgene) & 
                               padj <= 1e-5 & 
                               abs(log2FoldChange) >= 2 &
-                              abs(log2FoldChange) <= 14),
+                              abs(log2FoldChange) <= 15),
                      schematicPrefix = 'WT_D9_vs_KD_D9',
                      pathways = report$WT_D9_vs_KD_D9.KEGG[1:10,]$term_id)
 
-
-
-
-report$TrpM_D9_vs_KD_D9.KEGG <- createKEGGenrichmentTable(subset(RNAseq2_WT_TrpM_vs_KD, exp == 'TrpM D9' & 
-                                                                   ! is.na(log2FoldChange) &  
-                                                                   ! is.na(STRING_id) & 
-                                                                   padj <= 1e-5 & 
-                                                                   abs(log2FoldChange) >= 2 &
-                                                                   abs(log2FoldChange) <= 14))
-
-report$TrpM_D9_vs_KD_D9.KEGG.plot <- termEnrichmentPlot(report$TrpM_D9_vs_KD_D9.KEGG, 15, 'TrpM vs. KD Day 9')
-
-
-# (!) Creating KEGG pathway views is slow.Only run if they are not already present.
-createKEGGschematics(subset(RNAseq2_WT_TrpM_vs_KD, exp == 'TrpM D9' & 
-                              ! is.na(log2FoldChange) &  
-                              ! is.na(STRING_id) & 
-                              padj <= 1e-5 & 
-                              abs(log2FoldChange) >= 2 &
-                              abs(log2FoldChange) <= 14),
-                     schematicPrefix = 'TrpM_D9_vs_KD_D9',
-                     pathways = report$TrpM_D9_vs_KD_D9.KEGG[1:10,]$term_id)
-
-
-
-
-report$WT_late_vs_WT_early.KEGG <- createKEGGenrichmentTable(subset(RNAseq1_WT_vs_earlyWT, exp == 'D63' & 
-                                                                   ! is.na(log2FoldChange) &  
-                                                                   ! is.na(STRING_id) & 
-                                                                   padj <= 1e-5 & 
-                                                                   abs(log2FoldChange) >= 2 &
-                                                                   abs(log2FoldChange) <= 14))
-
-report$WT_late_vs_WT_early.KEGG.plot <- termEnrichmentPlot(report$WT_late_vs_WT_early.KEGG, 15, 'WT D63 vs D6')
-
-
-createKEGGschematics(subset(RNAseq1_WT_vs_earlyWT, exp == 'D63' & 
-                              ! is.na(log2FoldChange) &  
-                              ! is.na(STRING_id) & 
-                              padj <= 1e-5 & 
-                              abs(log2FoldChange) >= 2 &
-                              abs(log2FoldChange) <= 14),
-                     schematicPrefix = 'WT_late_vs_WT_early',
-                     pathways = report$WT_late_vs_WT_early.KEGG[1:10,]$term_id)
 
 
 
@@ -513,7 +474,7 @@ report$WT_D9_vs_KD_D9.GO <-
                                     ! is.na(STRING_id) & 
                                     padj <= 1e-5 & 
                                     abs(log2FoldChange) >= 2 &
-                                    abs(log2FoldChange) <= 14)$STRING_id, category = 'Process', methodMT = "fdr", iea = FALSE)
+                                    abs(log2FoldChange) <= 15)$STRING_id, category = 'Process', methodMT = "fdr", iea = FALSE)
 report$WT_D9_vs_KD_D9.GO <- subset(report$WT_D9_vs_KD_D9.GO, pvalue_fdr <= 0.05)
 
 
@@ -523,7 +484,7 @@ report$TrpM_D9_vs_KD_D9.GO <-
                                     ! is.na(STRING_id) & 
                                     padj <= 1e-5 & 
                                     abs(log2FoldChange) >= 2 &
-                                    abs(log2FoldChange) <= 14)$STRING_id, category = 'Process', methodMT = "fdr", iea = FALSE)
+                                    abs(log2FoldChange) <= 15)$STRING_id, category = 'Process', methodMT = "fdr", iea = FALSE)
 report$TrpM_D9_vs_KD_D9.GO <- subset(report$TrpM_D9_vs_KD_D9.GO , pvalue_fdr <= 0.05)
 
 
@@ -533,12 +494,12 @@ report$TrpM_D9_vs_KD_D9.GO <- subset(report$TrpM_D9_vs_KD_D9.GO , pvalue_fdr <= 
 # Integration site data
 #-------------------------------------------------------------------------------------------------------
 
-report$intSites <- intSites
+report$intSites <- intSites; rm(intSites)
 report$intSites$genotype <- ifelse(grepl('Y664F', report$intSites$patient), 'Y664F', 'WT')
 
 
 # Create a list of relative abundance plots for each subject.
-library(RColorBrewer)
+
 report$sampleAbundancePlotsData_n <- 50
 d <- data.frame(report$intSites)
 o <- split(d, d$patient)
@@ -598,7 +559,7 @@ report$intSites$STRING_id <- d$STRING_id
 
 
 # Create an integration frequency plot for WT subjects.
-library(ggrepel)
+
 
 report$preVspostFreqplot.WT <- preVsPostFreqPlot(subset(report$intSites, patient %in% c('pNA92', 'pNA93', 'pNA85')),
                                                  14, 

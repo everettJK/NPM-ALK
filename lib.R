@@ -15,7 +15,7 @@ make_square <- function(p, fudge=1) {
   p + ggplot2::theme(aspect.ratio = (dims$nrows/dims$ncols)*fudge)
 }
 
-
+ppNum <- function (n)  format(n, big.mark = ",", scientific = FALSE, trim = TRUE)
 
 timePoint2numeric <- function(x, interval = 'days'){
   timePointType <- stringr::str_match(x, '[DMY]')
