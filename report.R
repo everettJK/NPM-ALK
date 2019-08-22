@@ -75,8 +75,8 @@ report$salmon1.pca.plot1 <-
   ggplot(salmon1.pca.plotData, aes(x=x, y=y, color = genotype, shape = day, label = subject)) +
   theme_bw() +
   geom_point(size = 4, stroke = 1.5) +
-  scale_shape_manual(values = 21:25) +
-  scale_color_manual(values=c('black', 'red', 'dodgerblue2', 'green4')) +
+  scale_shape_manual(name = 'Time point', values = 21:25) +
+  scale_color_manual(name = 'Transgene', values=c('black', 'red', 'dodgerblue2', 'green4')) +
   labs(x = paste0('PC1 (', sprintf("%.2f", summary(salmon1.pca)$importance[3,][1] * 100), '%)'),
        y = paste0('PC2 (', sprintf("%.2f", (summary(salmon1.pca)$importance[3,][2] - summary(salmon1.pca)$importance[3,][1])  * 100), '%)')) +
   theme(panel.border = element_blank(), panel.grid.major = element_blank(),
@@ -103,8 +103,8 @@ report$salmon1.pca.plot2 <-
   ggplot(salmon1.pca.plotData2, aes(x=x, y=y, color = genotype, shape = day, label = subject)) +
   theme_bw() +
   geom_point(size = 4, stroke = 1.5) +
-  scale_shape_manual(values = 21:25) +
-  scale_color_manual(values=c('black', 'red', 'dodgerblue2')) +
+  scale_shape_manual(name = 'Time point', values = 21:25) +
+  scale_color_manual(name = 'Transgene', values=c('black', 'red', 'dodgerblue2')) +
   labs(x = paste0('PC1 (', sprintf("%.2f", summary(salmon1.pca)$importance[3,][1] * 100), '%)'),
        y = paste0('PC2 (', sprintf("%.2f", (summary(salmon1.pca)$importance[3,][2] - summary(salmon1.pca)$importance[3,][1])  * 100), '%)')) +
   theme(panel.border = element_blank(), panel.grid.major = element_blank(),
@@ -143,11 +143,16 @@ report$salmon2.pca.plot <-
   ggplot(salmon2.pca.plotData, aes(x=x, y=y, color = genotype, shape = day, label = subject)) +
   theme_bw() +
   geom_point(size = 4, stroke = 1.5) +
-  scale_shape_manual(values = 21:25) +
-  geom_text(size = 5, nudge_x = 3, nudge_y = 3, show.legend = FALSE) +
-  scale_color_manual(values=c('blue', 'green4', 'darkorange')) +
+  # geom_text(size = 5, nudge_x = 3, nudge_y = 3, show.legend = FALSE) +
+  scale_shape_manual(name = 'Time point', values = 21:25) +
+  scale_color_manual(name = 'Transgene', values=c('black', 'red', 'dodgerblue2')) +
   labs(x = paste0('PC1 (', sprintf("%.2f", summary(salmon1.pca)$importance[3,][1] * 100), '%)'),
-       y = paste0('PC2 (', sprintf("%.2f", (summary(salmon1.pca)$importance[3,][2] - summary(salmon1.pca)$importance[3,][1])  * 100), '%)'))
+       y = paste0('PC2 (', sprintf("%.2f", (summary(salmon1.pca)$importance[3,][2] - summary(salmon1.pca)$importance[3,][1])  * 100), '%)')) +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
+
+ggsave(report$salmon2.pca.plot, file = 'paper_figures_and_tables/RNAseq2.pdf')
+
 
 
 # Convenience function to add gene names from tx2gene to contrasts by using transcript id row names as a lookup.
@@ -452,8 +457,10 @@ report$WT_D9_vs_KD_D9.KEGG <- createKEGGenrichmentTable(subset(RNAseq2_WT_TrpM_v
 
 report$WT_D9_vs_KD_D9.KEGG.plot <- termEnrichmentPlot(report$WT_D9_vs_KD_D9.KEGG, 15, 'WT vs. KD Day 9')
 
+ggsave(report$WT_D9_vs_KD_D9.KEGG.plot , file = 'paper_figures_and_tables/WT_D9_vs_KD_D9.KEGG.plot.pdf')
 
-# (!) Creating KEGG pathway views is slow.Only run if they are not already present.
+
+# (!) Creating KEGG pathway views is slow.  Only run if they are not already present.
 createKEGGschematics(subset(RNAseq2_WT_TrpM_vs_KD, exp == 'WT D9' & 
                               ! is.na(log2FoldChange) &  
                               ! is.na(entrezgene) & 

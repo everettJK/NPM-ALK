@@ -56,16 +56,18 @@ termEnrichmentPlot <- function(d, n, t){
   d$genesDOWN <- d$genesDOWN * -1
   labels <- rev(unique(d$label))
   d <- tidyr::gather(d, key='var', value='val', genesUP, genesDOWN)
+  d$var <- ifelse(d$var == 'genesUP', 'Increased', 'Decreased')
   d$label <- factor(d$label, levels = labels)
+
   ggplot(d, aes(label, val, fill = var)) + 
     theme_bw() +
-    geom_bar(stat='identity') + 
-    scale_fill_manual(values = c('dodgerblue2', 'red')) +
+    geom_bar(color = 'black', stat='identity') + 
+    scale_fill_manual(name = 'Transcription', values = c('dodgerblue2', 'red')) +
     coord_flip() +
     labs(x = '', y = 'Genes') +
     theme(text = element_text(size=14), panel.border = element_blank(), panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
-    guides(fill=FALSE) +
+    #guides(fill=FALSE) +
     ggtitle(t)
 }
 
