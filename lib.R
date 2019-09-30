@@ -47,9 +47,15 @@ timePoint2numeric <- function(x, interval = 'days'){
 }
 
 
-termEnrichmentPlot <- function(d, n, t){
-  d <- dplyr::arrange(d, pvalue_fdr)[1:n,]
-  message(min(d$pvalue_fdr), ' - ', max(d$pvalue_fdr))
+termEnrichmentPlot <- function(d, n, t, dir = 'both'){
+  d <- dplyr::arrange(d, pvalue_fdr)
+  if(dir == 'down') d <- dplyr::arrange(d, genesUP - genesDOWN, pvalue_fdr)
+  if(dir == 'up')   d <- dplyr::arrange(d, genesDOWN - genesUP, pvalue_fdr)
+  
+  d <- d[1:n,]
+  
+  message('min padj: ', min(d$pvalue_fdr), ' max padj: ', max(d$pvalue_fdr))
+  
   # d$label <- paste0(d$term_description, '\n', signif(d$pvalue_fdr, digits=2))
   d$label <- d$term_description
   d <- dplyr::select(d, label, genesUP, genesDOWN) 
@@ -228,6 +234,7 @@ preVsPostFreqPlot <- function(sites, daysCutOff, oncoGenes, nGenesToLabel = 5, d
     scale_shape_manual(name = 'Oncogene', values = c(16, 15)) +
     scale_color_gradientn(name = 'log10(Data density)', colors = c("green3", "gold2", "red")) +
     geom_point(alpha = 0.4, size = 4, stroke = 0) +
+    #geom_jitter(width = 0.0001, height = 0.0001) +
     geom_abline(slope=1, intercept=0, color='blue', size=0.5) +
     guides(shape = guide_legend(override.aes = list(stroke = 2))) +
     geom_text_repel(aes(label=geneLabel), color='black', size=2.5,  direction='y',box.padding=1.0, point.padding=1.25) +
