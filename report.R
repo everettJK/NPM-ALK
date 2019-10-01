@@ -82,7 +82,7 @@ report$salmon1.pca.plot1 <-
   theme(panel.border = element_blank(), panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
 
-ggsave(report$salmon1.pca.plot1, file = 'paper_figures_and_tables/RNAseq1_with_Y664F.pdf')
+ggsave(report$salmon1.pca.plot1, file = 'figures_and_tables/RNAseq1_with_Y664F.pdf')
 
 
 
@@ -110,7 +110,7 @@ report$salmon1.pca.plot2 <-
   theme(panel.border = element_blank(), panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
 
-ggsave(report$salmon1.pca.plot2, file = 'paper_figures_and_tables/RNAseq1_no_Y664F.pdf')
+ggsave(report$salmon1.pca.plot2, file = 'figures_and_tables/RNAseq1_no_Y664F.pdf')
 
 
 
@@ -151,15 +151,12 @@ report$salmon2.pca.plot <-
   theme(panel.border = element_blank(), panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
 
-ggsave(report$salmon2.pca.plot, file = 'paper_figures_and_tables/RNAseq2.pdf')
+ggsave(report$salmon2.pca.plot, file = 'figures_and_tables/RNAseq2.pdf')
+
+save(list = ls(all.names = TRUE), file = 'savePoints/sp1.RData', envir = .GlobalEnv, compress = TRUE, compression_level = 9)
+#-~-~-~-~o~-~-~-~-~o-~-~-~-~o-~-~-~-~o-~-~-~-~o-~-~-~-~o-~-~-~-~o-~-~-~-~o-~-~-~-~o-~-~-~-~o-~-~-~-~
 
 
-
-# Convenience function to add gene names from tx2gene to contrasts by using transcript id row names as a lookup.
-addGeneNamesToContrast <- function(contrast){
-  contrast$gene <- tx2gene[match(row.names(contrast), tx2gene$gene_id),]$gene_name
-  contrast
-}
 
 
 # Create contrasts which contain the log2 fold change values and adjusted pvalues.
@@ -177,7 +174,6 @@ RNAseq1_WT_D9_vs_KD_D9          <- addGeneNamesToContrast(results(salmon1.ddsTxi
 RNAseq1_WT_D12_vs_KD_D12        <- addGeneNamesToContrast(results(salmon1.ddsTxi, contrast=c("repGrp", "WT_d12", "KD_d12")))
 RNAseq1_WT_D33_vs_KD_D12        <- addGeneNamesToContrast(results(salmon1.ddsTxi, contrast=c("repGrp", "WT_d33", "KD_d12")))
 RNAseq1_WT_D63_vs_KD_D12        <- addGeneNamesToContrast(results(salmon1.ddsTxi, contrast=c("repGrp", "WT_d63", "KD_d12")))
-
 RNAseq2_WT_D6_vs_KD_D6          <- addGeneNamesToContrast(results(salmon2.ddsTxi, contrast=c("repGrp","WT_D6","KD_D6")))
 RNAseq2_TrpM_D6_vs_KD_D6        <- addGeneNamesToContrast(results(salmon2.ddsTxi, contrast=c("repGrp","TrpM_D6","KD_D6")))
 RNAseq2_TrpM_D6_vs_WT_D6        <- addGeneNamesToContrast(results(salmon2.ddsTxi, contrast=c("repGrp","TrpM_D6","WT_D6")))
@@ -186,10 +182,8 @@ RNAseq2_TrpM_D9_vs_KD_D9        <- addGeneNamesToContrast(results(salmon2.ddsTxi
 RNAseq2_TrpM_D9_vs_WT_D9        <- addGeneNamesToContrast(results(salmon2.ddsTxi, contrast=c("repGrp","TrpM_D9","WT_D9")))
 
 
-
-
-# Heatmaps
-#--------------------------------------------------------------------------------------------------
+# Build contrast tables
+#------------------------------------------------------------------------------------------------00
 
 RNAseq1_WT_vs_KD <- 
   dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq1_WT_D6_vs_KD_D6),   exp = 'WT D6',  timePoint = 'D6'),
@@ -197,47 +191,91 @@ RNAseq1_WT_vs_KD <-
                    dplyr::mutate(data.frame(RNAseq1_WT_D12_vs_KD_D12), exp = 'WT D12', timePoint = 'D12'),
                    dplyr::mutate(data.frame(RNAseq1_WT_D33_vs_KD_D12), exp = 'WT D33', timePoint = 'D33'),
                    dplyr::mutate(data.frame(RNAseq1_WT_D63_vs_KD_D12), exp = 'WT D63', timePoint = 'D63')) %>%
-  dplyr::filter(! is.na(padj)) %>%
+  dplyr::filter(abs(log2FoldChange) <= 15) %>%
+  tidyr::replace_na(list(padj = 1)) %>%
   dplyr::group_by(exp, gene) %>% 
   dplyr::top_n(-1, wt = padj) %>%
-  dplyr::ungroup()
-RNAseq1_WT_vs_KD$gene <- toupper(RNAseq1_WT_vs_KD$gene)
+  dplyr::ungroup() %>%
+  dplyr::mutate(gene = toupper(gene))
 
 
-createGeneListHeatMap <- function(data, geneList, scaleLimit, orderByFoldChange = TRUE){
-  plot.data      <- subset(data, gene %in% geneList)
-  plot.data$gene <- factor(as.character(plot.data$gene), levels = rev(geneList))
-  plot.data$sig  <- factor(ifelse(plot.data$padj <= 0.05, TRUE, FALSE), levels = c(TRUE, FALSE))
-  plot.data$timePoint <- factor(as.character(plot.data$timePoint), levels =  gtools::mixedsort(unique(plot.data$timePoint)))
+RNAseq1_WT_vs_d6_KD <- 
+  dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq1_WT_D9_vs_WT_D6),  exp = 'D9',  timePoint = 'D9'),
+                   dplyr::mutate(data.frame(RNAseq1_WT_D12_vs_WT_D6), exp = 'D12', timePoint = 'D12'),
+                   dplyr::mutate(data.frame(RNAseq1_WT_D33_vs_WT_D6), exp = 'D33', timePoint = 'D33'),
+                   dplyr::mutate(data.frame(RNAseq1_WT_D63_vs_WT_D6), exp = 'D63', timePoint = 'D63')) %>%
+  dplyr::filter(abs(log2FoldChange) <= 15) %>%
+  tidyr::replace_na(list(padj = 1)) %>%
+  dplyr::group_by(exp, gene) %>% 
+  dplyr::top_n(-1, wt = padj) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(gene = toupper(gene))
 
-  midScaleMark <- floor(scaleLimit/2)
-  
-  if(orderByFoldChange){
-    plot.data <- group_by(plot.data, gene) %>% mutate(rowsum = sum(log2FoldChange)) %>% ungroup() %>% arrange(rowsum) 
-    plot.data$gene <- factor(as.character(plot.data$gene), levels = unique(plot.data$gene))
-  }
-  
-  make_square(ggplot(plot.data, aes(x = timePoint, y = gene, fill = log2FoldChange, shape = sig)) +
-                  theme_bw() +
-                  geom_tile(color="gray90",size=0.6) + 
-                  scale_shape_manual(values = c(42, 32)) +
-                  geom_point(size = 2, color = 'gray25', show.legend = FALSE) +
-                  scale_fill_gradient2(name = 'Fold change', low="navy", mid="white", high="red", midpoint=0, 
-                                       limits=c(-scaleLimit, scaleLimit), breaks = c(-scaleLimit, -midScaleMark, 0, midScaleMark, scaleLimit)) + 
-                  scale_y_discrete(expand=c(0,0)) +
-                  scale_x_discrete(expand=c(0,0)) +
-                  labs(x='', y = '') +
-                  theme(axis.text.x = element_text(angle = 90, hjust = 1),
-                        panel.border = element_blank(), 
-                        panel.grid.major = element_blank(),
-                        panel.grid.minor = element_blank(), 
-                        axis.line = element_line(colour = "black"),
-                        legend.position="bottom") +
-                  guides(fill=guide_colorbar(title.position = "top", barwidth=5)), fudge = 0.75) 
-}
 
-# JKE
-# Gene of interest for creating heat maps.
+RNAseq1_WT_vs_d12_KD <- 
+  dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq1_WT_D12_vs_KD_D12), exp = 'D12', timePoint = 'D12'),
+                   dplyr::mutate(data.frame(RNAseq1_WT_D33_vs_KD_D12), exp = 'D33', timePoint = 'D33'),
+                   dplyr::mutate(data.frame(RNAseq1_WT_D63_vs_KD_D12), exp = 'D63', timePoint = 'D63')) %>%
+  dplyr::filter(abs(log2FoldChange) <= 15) %>%
+  tidyr::replace_na(list(padj = 1)) %>%
+  dplyr::group_by(exp, gene) %>% 
+  dplyr::top_n(-1, wt = padj) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(gene = toupper(gene))
+
+
+RNAseq1_Y664F_vs_WT <- 
+  dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq1_Y664F_D9_vs_WT_D9),   exp = 'Y664F D9', timePoint = 'D9'),
+                   dplyr::mutate(data.frame(RNAseq1_Y664F_D12_vs_WT_D12), exp = 'Y664F D12', timePoint = 'D12')) %>%
+  dplyr::filter(abs(log2FoldChange) <= 15) %>%
+  tidyr::replace_na(list(padj = 1)) %>%
+  dplyr::group_by(exp, gene) %>% 
+  dplyr::top_n(-1, wt = padj) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(gene = toupper(gene))
+
+
+RNAseq1_Y664F_vs_KD <- 
+  dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq1_Y664F_D9_vs_KD_D9),   exp = 'Y664F D9', timePoint = 'D9'),
+                   dplyr::mutate(data.frame(RNAseq1_Y664F_D12_vs_KD_D12), exp = 'Y664F D12', timePoint = 'D12')) %>%
+  dplyr::filter(abs(log2FoldChange) <= 15) %>%
+  tidyr::replace_na(list(padj = 1)) %>%
+  dplyr::group_by(exp, gene) %>% 
+  dplyr::top_n(-1, wt = padj) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(gene = toupper(gene))
+
+
+
+RNAseq2_WT_TrpM_vs_KD <- 
+  dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq2_WT_D6_vs_KD_D6),   exp = 'WT D6',   timePoint = 'D6 WT'),
+                   dplyr::mutate(data.frame(RNAseq2_TrpM_D6_vs_KD_D6), exp = 'TrpM D6', timePoint = 'D6 TrpM'),
+                   dplyr::mutate(data.frame(RNAseq2_WT_D9_vs_KD_D9),   exp = 'WT D9',   timePoint = 'D9 WT'),
+                   dplyr::mutate(data.frame(RNAseq2_TrpM_D9_vs_KD_D9), exp = 'TrpM D9', timePoint = 'D9 TrpM')) %>%
+  dplyr::filter(abs(log2FoldChange) <= 15) %>%
+  tidyr::replace_na(list(padj = 1)) %>%
+  dplyr::group_by(exp, gene) %>% 
+  dplyr::top_n(-1, wt = padj) %>%
+  dplyr::ungroup() %>% 
+  dplyr::mutate(gene = toupper(gene))
+
+
+RNAseq2_TrpM_vs_WT <- 
+  dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq2_TrpM_D6_vs_WT_D6), exp = 'D6', timePoint = 'D6'),
+                   dplyr::mutate(data.frame(RNAseq2_TrpM_D9_vs_WT_D9), exp = 'D9', timePoint = 'D9')) %>%
+  dplyr::mutate(exp = factor(exp, levels = c('D6', 'D9'))) %>%
+  dplyr::filter(abs(log2FoldChange) <= 15) %>%
+  tidyr::replace_na(list(padj = 1)) %>%
+  dplyr::group_by(exp, gene) %>% 
+  dplyr::top_n(-1, wt = padj) %>%
+  dplyr::ungroup() %>% 
+  dplyr::mutate(gene = toupper(gene))
+
+
+
+# Heatmaps
+#--------------------------------------------------------------------------------------------------
+
 ALK_ALCL_a    <- c('IL1RAP', 'BATF3', 'FBN1', 'TMEM158', 'IMPA2', 'FUT7', 'IL2RA', 'TMEM260', 'MYO10', 'MCAM', 'SLC12A8', 'NQO1', 'AGT', 'RHOC', 'PRF1', 'TEAD4', 'SPP1', 'CLEC3B', 'RUBCNL', 'G0S2', 'S100A9', 'TNFRSF8', 'PTPRG')
 ALK_ALCL_b    <- c('IL10', 'TNFRSF8', 'GZMB', 'CD274', 'IL17A', 'IL22', 'JUNB', 'PRF1', 'CDC25A', 'LCK', 'BCL11B','LAT', 'LCP2', 'IL2RG', 'ZAP70', 'CD3E')
 Tcell_TFs     <- c('TCF7', 'GATA3', 'LEF1', 'BCL11B', 'BACH2', 'NFATC3', 'HDAC7', 'SATB1', 'KLF3', 'ETS1', 'CAMK4', 'KLF7', 'MYC', 'THEMIS')
@@ -248,36 +286,44 @@ EmbStemSpec   <- c('SOX2', 'SOX4', 'SOX5', 'TEAD4', 'ZIC2', 'ZIC5', 'ZEB2', 'DTX
 upInWnt       <- c('HHEX','JUNB', 'MEIS1','LAT2', 'LYN', 'NFE2', 'PAX5', 'MPO', 'GADD45A','MAFB', 'MEF2C', 'CD34', 'FLT3', 'GATA2', 'SOX2', 'SOX4', 'SOX5', 'TEAD4', 'ZIC2', 'ZIC5','ZEB2', 'DTX1', 'TWIST1','EDN1', 'PDGFA', 'CCND1', 'ETS2', 'EZH2', 'ZIC1')
 
 
+# WT63vsKD12
+Thymocyte_CD34aPLUS_CD1aMINUS <- c('LAT2','LYN','HHEX','TIGIT','LEF1','LCK','FYN','CAMK4','BCL11B')
+Thymocyte_CD34aPLUS_CD1aPLUS  <- c('LAT2','LYN','RUNX2','HHEX','ITK','ZFP90','CD27','CTLA4','CD28')
+Thymocyte_Pre_TCR             <- c('AURKA','MYB','EZH2','ETS1','TIGIT','RCAN3','CD28','ATM','ITGAL')
+Thymocyte_DP_TCRa_b           <- c('EZH2','MYB','ATM','BACH2','RGS1','CD27','CTLA4','SERPINE2','KLF2')
+
+report$Thymocyte_CD34aPLUS_CD1aMINUS_heatmap <- createGeneListHeatMap(subset(RNAseq1_WT_vs_KD, timePoint == 'D63'), Thymocyte_CD34aPLUS_CD1aMINUS, 9, 'figures_and_tables/RNAseq1_WT_vs_KD_D63_Thymocyte_CD34aPLUS_CD1aMINUS.pdf')
+report$Thymocyte_CD34aPLUS_CD1aPLUS <- createGeneListHeatMap(subset(RNAseq1_WT_vs_KD, timePoint == 'D63'), Thymocyte_CD34aPLUS_CD1aPLUS, 9, 'figures_and_tables/RNAseq1_WT_vs_KD_D63_Thymocyte_CD34aPLUS_CD1aPLUS.pdf')
+report$Thymocyte_Pre_TCR <- createGeneListHeatMap(subset(RNAseq1_WT_vs_KD, timePoint == 'D63'), Thymocyte_Pre_TCR, 9, 'figures_and_tables/RNAseq1_WT_vs_KD_D63_Thymocyte_Pre_TCR.pdf')
+report$Thymocyte_DP_TCRa_b <- createGeneListHeatMap(subset(RNAseq1_WT_vs_KD, timePoint == 'D63'), Thymocyte_DP_TCRa_b, 9, 'figures_and_tables/RNAseq1_WT_vs_KD_D63_Thymocyte_DP_TCRa_b.pdf')
+
 # Create heat maps for gene of interest sets where select sets share common scales.
-# ALCL: anaplastic large cell lymphoma 
-report$ALK_ALCL_heatmap_a    <- createGeneListHeatMap(RNAseq1_WT_vs_KD, ALK_ALCL_a, 9)
-report$ALK_ALCL_heatmap_b    <- createGeneListHeatMap(RNAseq1_WT_vs_KD, ALK_ALCL_b, 9)
-report$Tcell_TFs_heatmap     <- createGeneListHeatMap(RNAseq1_WT_vs_KD, Tcell_TFs, 11)
-report$Tcell_sig_heatmap     <- createGeneListHeatMap(RNAseq1_WT_vs_KD, Tcell_sig, 11)
-report$Tcell_recp_heatmap    <- createGeneListHeatMap(RNAseq1_WT_vs_KD, Tcell_recp, 11)
-report$NonTcell_spec_heatmap <- createGeneListHeatMap(RNAseq1_WT_vs_KD, NonTcell_spec, 11)
-report$EmbStemSpec_heatmap   <- createGeneListHeatMap(RNAseq1_WT_vs_KD, EmbStemSpec, 11)
+report$ALK_ALCL_heatmap_a    <- createGeneListHeatMap(RNAseq1_WT_vs_KD, ALK_ALCL_a,    9,  'figures_and_tables/RNAseq1_WT_vs_KD_ALK_ALCL_heatmap_a.pdf')
+report$ALK_ALCL_heatmap_b    <- createGeneListHeatMap(RNAseq1_WT_vs_KD, ALK_ALCL_b,    9,  'figures_and_tables/RNAseq1_WT_vs_KD_ALK_ALCL_heatmap_b.pdf')
+report$Tcell_TFs_heatmap     <- createGeneListHeatMap(RNAseq1_WT_vs_KD, Tcell_TFs,     11, 'figures_and_tables/RNAseq1_WT_vs_KD_Tcell_TFs_heatmap.pdf')
+report$Tcell_sig_heatmap     <- createGeneListHeatMap(RNAseq1_WT_vs_KD, Tcell_sig,     11, 'figures_and_tables/RNAseq1_WT_vs_KD_Tcell_sig_heatmap.pdf')
+report$Tcell_recp_heatmap    <- createGeneListHeatMap(RNAseq1_WT_vs_KD, Tcell_recp,    11, 'figures_and_tables/RNAseq1_WT_vs_KD_Tcell_recp_heatmap.pdf')
+report$NonTcell_spec_heatmap <- createGeneListHeatMap(RNAseq1_WT_vs_KD, NonTcell_spec, 11, 'figures_and_tables/RNAseq1_WT_vs_KD_NonTcell_spec_heatmap.pdf')
+report$EmbStemSpec_heatmap   <- createGeneListHeatMap(RNAseq1_WT_vs_KD, EmbStemSpec,   11, 'figures_and_tables/RNAseq1_WT_vs_KD_EmbStemSpec_heatmap.pdf')
 
 
+# Create day 9 plots for WT, Y664F, and TrpM for select gene sets.
+a <- RNAseq2_WT_TrpM_vs_KD[grep('D9', RNAseq2_WT_TrpM_vs_KD$timePoint),]
+b <- subset(RNAseq1_Y664F_vs_KD, timePoint == 'D9')
+b$timePoint <- 'D9 Y664F'
+o <- bind_rows(a, b)
+o$timePoint <- factor(sub('D9\\s+', '', o$timePoint), levels = c('WT', 'Y664F', 'TrpM'))
+o <- subset(o, gene %in% c(Tcell_sig, Tcell_TFs, Tcell_recp, upInWnt))
 
+report$D9_WT_Y664F_TrpM_vs_KD_Tcell_sig_heatmap  <- createGeneListHeatMap(o, Tcell_sig, ceiling(max(abs(o$log2FoldChange))),  'figures_and_tables/D9_WT_Y664F_TrpM_vs_KD_Tcell_sig_heatmap.pdf')
+report$D9_WT_Y664F_TrpM_vs_KD_Tcell_TFs_heatmap  <- createGeneListHeatMap(o, Tcell_TFs, ceiling(max(abs(o$log2FoldChange))),  'figures_and_tables/D9_WT_Y664F_TrpM_vs_KD_Tcell_TFs_heatmap.pdf')
+report$D9_WT_Y664F_TrpM_vs_KD_Tcell_recp_heatmap <- createGeneListHeatMap(o, Tcell_recp, ceiling(max(abs(o$log2FoldChange))), 'figures_and_tables/D9_WT_Y664F_TrpM_vs_KD_Tcell_recp_heatmap.pdf')
+report$D9_WT_Y664F_TrpM_vs_KD_upInWNT_heatmap    <- createGeneListHeatMap(o, upInWnt, ceiling(max(abs(o$log2FoldChange))),    'figures_and_tables/D9_WT_Y664F_TrpM_vs_KD_upInWNT_heatmap.pdf')
 
 
 
 # RNAseq2  WT / TrpM vs KD
-#--------------------------------------------------------------------------------------------------
-
-RNAseq2_WT_TrpM_vs_KD <- 
-  dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq2_WT_D6_vs_KD_D6),   exp = 'WT D6',   timePoint = 'D6 WT'),
-                   dplyr::mutate(data.frame(RNAseq2_TrpM_D6_vs_KD_D6), exp = 'TrpM D6', timePoint = 'D6 TrpM'),
-                   dplyr::mutate(data.frame(RNAseq2_WT_D9_vs_KD_D9),   exp = 'WT D9',   timePoint = 'D9 WT'),
-                   dplyr::mutate(data.frame(RNAseq2_TrpM_D9_vs_KD_D9), exp = 'TrpM D9', timePoint = 'D9 TrpM')) %>%
-  dplyr::filter(! is.na(padj)) %>%
-  dplyr::group_by(exp, gene) %>% 
-  dplyr::top_n(-1, wt = padj) %>%
-  dplyr::ungroup()
-
-# Determine which genes should be used in the followin heat map.
-# Make sure that selected genes are seen across all time points.
+# Determine which genes should be used - make sure that selected genes are seen across all time points.
 genes <- dplyr::group_by(RNAseq2_WT_TrpM_vs_KD, gene) %>%
          dplyr::mutate(exps = n_distinct(exp), colsum = sum(log2FoldChange)) %>%
          dplyr::ungroup() %>%
@@ -286,71 +332,29 @@ genes <- dplyr::group_by(RNAseq2_WT_TrpM_vs_KD, gene) %>%
          dplyr::pull(gene) %>%
          unique()
 
-report$RNAseq2_WT_TrpM_vs_KD.plotA <- createGeneListHeatMap(RNAseq2_WT_TrpM_vs_KD, genes[1:38], 11, orderByFoldChange = FALSE)
-report$RNAseq2_WT_TrpM_vs_KD.plotB <- createGeneListHeatMap(RNAseq2_WT_TrpM_vs_KD, genes[39:75], 11, orderByFoldChange = FALSE)
+report$RNAseq2_WT_TrpM_vs_KD.plot1 <- createGeneListHeatMap(RNAseq2_WT_TrpM_vs_KD, genes[1:38],  11, 'figures_and_tables/RNAseq2_WT_TrpM_vs_KD.plot_part1.pdf', orderByFoldChange = FALSE)
+report$RNAseq2_WT_TrpM_vs_KD.plot2 <- createGeneListHeatMap(RNAseq2_WT_TrpM_vs_KD, genes[39:75], 11, 'figures_and_tables/RNAseq2_WT_TrpM_vs_KD.plot_part2.pdf', orderByFoldChange = FALSE)
 
 
 
 
-# SWI/SNF
+# RNAseq2 SWI/SNF
 #--------------------------------------------------------------------------------------------------
 genes    <- unique(RNAseq2_WT_TrpM_vs_KD$gene[grepl('^SMARC|^ARID1|^ACTL6', RNAseq2_WT_TrpM_vs_KD$gene)])
 g        <- subset(RNAseq2_WT_TrpM_vs_KD, gene %in% genes)
-report$SWI_SNF_genes_RNAseq <- createGeneListHeatMap(g, unique(g$gene), 6)
+report$SWI_SNF_genes_RNAseq <- createGeneListHeatMap(g, unique(g$gene), 6, 'figures_and_tables/RNAseq2_WT_TrpM_vs_KD_SWI_SNF.pdf')
 
 
 
-
-# Volcano plots
+# Compare WT transcription to earliest WT profile.
 #--------------------------------------------------------------------------------------------------
-
-createVolcanoPlot <- function(RNAseq, title, file){
-  plot.data <- subset(data.frame(RNAseq), ! is.na(padj) & abs(log2FoldChange) <= 15)
-  plot.data$class <- ifelse(plot.data$padj > 0.05, 'No significant change', ifelse(plot.data$log2FoldChange >= 0, 'Increased', 'Decreased'))
-  plot.data$class <- factor(as.character(plot.data$class), levels = c('No significant change', 'Increased', 'Decreased'))
-
-  plot.data$foldChange <- 2^plot.data$log2FoldChange
-  gc()
-  write.xlsx2(plot.data, file = sub('\\.\\S+$', '.xlsx', file), col.names = TRUE, row.names = TRUE)
-  
-  p <- ggplot(plot.data, aes(foldChange, -log10(padj), fill = class)) +
-       theme_bw() +
-       scale_fill_manual(name = 'Transcription', values = c('gray50', 'red', 'dodgerblue2')) +
-       geom_point(shape = 21, size = 2, alpha = 0.5, color = 'black') +
-       scale_x_log10() +
-       annotation_logticks(base = 10, sides="b") +
-       theme(panel.border = element_blank(), 
-             panel.grid.major = element_blank(),
-             panel.grid.minor = element_blank(), 
-             axis.line = element_line(colour = "black")) +
-      ggtitle(title) +
-      guides(fill = guide_legend(override.aes=list(shape=21, size = 3)),
-             shape = guide_legend(override.aes=list(size = 3))) +
-      labs(x= 'Fold Change', y = '-log10(adjusted p-value)')
-  
-  ggsave(p, file = file)
-  p
-}
-
-report$RNAseq1_WT_D6_vs_KD_D6_volcano   <- createVolcanoPlot(RNAseq1_WT_D6_vs_KD_D6,   'WT D6 vs KD D6',  'paper_figures_and_tables/RNAseq1_WT_D6_vs_KD_D6_volcano.pdf')
-report$RNAseq1_WT_D9_vs_KD_D9_volcano   <- createVolcanoPlot(RNAseq1_WT_D9_vs_KD_D9,   'WT D9 vs KD D9',  'paper_figures_and_tables/RNAseq1_WT_D9_vs_KD_D9_volcano.pdf')
-report$RNAseq1_WT_D12_vs_KD_D12_volcano <- createVolcanoPlot(RNAseq1_WT_D12_vs_KD_D12, 'WT D12 vs KD D12', 'paper_figures_and_tables/RNAseq1_WT_D12_vs_KD_D12_volcano.pdf')
-report$RNAseq1_WT_D33_vs_KD_D12_volcano <- createVolcanoPlot(RNAseq1_WT_D33_vs_KD_D12, 'WT D33 vs KD D12', 'paper_figures_and_tables/RNAseq1_WT_D33_vs_KD_D12_volcano.pdf')
-report$RNAseq1_WT_D63_vs_KD_D12_volcano <- createVolcanoPlot(RNAseq1_WT_D63_vs_KD_D12, 'WT D63 vs KD D12', 'paper_figures_and_tables/RNAseq1_WT_D63_vs_KD_D12_volcano.pdf')
+RNAseq1_WT_vs_d6_KD.genes <- subset(data.frame(RNAseq1_WT_D63_vs_WT_D6), padj <= 1e-25 & abs(log2FoldChange) >= 3)$gene
+report$RNAseq1.pval.WT_vs_earlyWT <- createGeneListHeatMap(RNAseq1_WT_vs_d6_KD, RNAseq1_WT_vs_d6_KD.genes, 8, 'figures_and_tables/RNAseq1_WT_vs_d6_KD.pdf')
 
 
 
-
-# Compare TrpM to WT 
+# RNAseq1: Compare Y664F to WT. 
 #--------------------------------------------------------------------------------------------------
-RNAseq1_Y664F_vs_WT <- 
-  dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq1_Y664F_D9_vs_WT_D9),   exp = 'Y664F D9', timePoint = 'D9'),
-                   dplyr::mutate(data.frame(RNAseq1_Y664F_D12_vs_WT_D12), exp = 'Y664F D12', timePoint = 'D12')) %>%
-  dplyr::filter(! is.na(padj), abs(log2FoldChange) <= 15) %>%
-  dplyr::group_by(exp, gene) %>% 
-  dplyr::top_n(-1, wt = padj) %>%
-  dplyr::ungroup()
-
 RNAseq1_Y664F_vs_WT.genes <- 
   dplyr::group_by(RNAseq1_Y664F_vs_WT, gene) %>%
   dplyr::mutate(exps = n_distinct(as.character(exp))) %>%
@@ -360,18 +364,13 @@ RNAseq1_Y664F_vs_WT.genes <-
   dplyr::pull(gene) %>%
   unique()
 
-report$RNAseq1.pval.WT_Y664F_vs_WT <- createGeneListHeatMap(RNAseq1_Y664F_vs_WT, RNAseq1_Y664F_vs_WT.genes, 9)
+report$RNAseq1.Y664F_vs_WT <- createGeneListHeatMap(RNAseq1_Y664F_vs_WT, RNAseq1_Y664F_vs_WT.genes, 9, 'figures_and_tables/RNAseq1.Y664F_vs_WT.pdf')
 
 
-RNAseq2_TrpM_vs_WT <- 
-  dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq2_TrpM_D6_vs_WT_D6), exp = 'D6', timePoint = 'D6'),
-                   dplyr::mutate(data.frame(RNAseq2_TrpM_D9_vs_WT_D9), exp = 'D9', timePoint = 'D9')) %>%
-     dplyr::mutate(exp = factor(exp, levels = c('D6', 'D9'))) %>%
-     dplyr::filter(! is.na(padj), abs(log2FoldChange) <= 15) %>%
-     dplyr::group_by(exp, gene) %>% 
-     dplyr::top_n(-1, wt = padj) %>%
-     dplyr::ungroup()
 
+
+# RNAseq2: Compare TrpM to WT. 
+#--------------------------------------------------------------------------------------------------
 RNAseq2_TrpM_vs_WT.genes <- 
   dplyr::group_by(RNAseq2_TrpM_vs_WT, gene) %>%
   dplyr::mutate(exps = n_distinct(exp)) %>%
@@ -381,93 +380,37 @@ RNAseq2_TrpM_vs_WT.genes <-
   dplyr::pull(gene) %>%
   unique()
 
-report$RNAseq2.pval.TrpM_vs_WT <- createGeneListHeatMap(RNAseq2_TrpM_vs_WT, RNAseq2_TrpM_vs_WT.genes, 8)
+report$RNAseq2.TrpM_vs_WT <- createGeneListHeatMap(RNAseq2_TrpM_vs_WT, RNAseq2_TrpM_vs_WT.genes, 8, 'figures_and_tables/RNAseq2.TrpM_vs_WT.pdf')
 
 
-
-
-# Compare WT transcription to earliest WT profile.
+# Volcano plots
 #--------------------------------------------------------------------------------------------------
-
-RNAseq1_WT_vs_earlyWT <- 
-  dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq1_WT_D9_vs_WT_D6),  exp = 'D9',  timePoint = 'D9'),
-                   dplyr::mutate(data.frame(RNAseq1_WT_D12_vs_WT_D6), exp = 'D12', timePoint = 'D12'),
-                   dplyr::mutate(data.frame(RNAseq1_WT_D33_vs_WT_D6), exp = 'D33', timePoint = 'D33'),
-                   dplyr::mutate(data.frame(RNAseq1_WT_D63_vs_WT_D6), exp = 'D63', timePoint = 'D63')) %>%
-  dplyr::filter(! is.na(padj), abs(log2FoldChange) <= 15) %>%
-  dplyr::group_by(exp, gene) %>% 
-  dplyr::top_n(-1, wt = padj) %>%
-  dplyr::ungroup()
+report$RNAseq1_WT_D6_vs_KD_D6_volcano   <- createVolcanoPlot(RNAseq1_WT_D6_vs_KD_D6,   'WT D6 vs KD D6',   'figures_and_tables/RNAseq1_WT_D6_vs_KD_D6_volcano.pdf')
+report$RNAseq1_WT_D9_vs_KD_D9_volcano   <- createVolcanoPlot(RNAseq1_WT_D9_vs_KD_D9,   'WT D9 vs KD D9',   'figures_and_tables/RNAseq1_WT_D9_vs_KD_D9_volcano.pdf')
+report$RNAseq1_WT_D12_vs_KD_D12_volcano <- createVolcanoPlot(RNAseq1_WT_D12_vs_KD_D12, 'WT D12 vs KD D12', 'figures_and_tables/RNAseq1_WT_D12_vs_KD_D12_volcano.pdf')
+report$RNAseq1_WT_D33_vs_KD_D12_volcano <- createVolcanoPlot(RNAseq1_WT_D33_vs_KD_D12, 'WT D33 vs KD D12', 'figures_and_tables/RNAseq1_WT_D33_vs_KD_D12_volcano.pdf')
+report$RNAseq1_WT_D63_vs_KD_D12_volcano <- createVolcanoPlot(RNAseq1_WT_D63_vs_KD_D12, 'WT D63 vs KD D12', 'figures_and_tables/RNAseq1_WT_D63_vs_KD_D12_volcano.pdf')
 
 
-RNAseq1_WT_vs_d12KD <- 
-  dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq1_WT_D12_vs_KD_D12), exp = 'D12', timePoint = 'D12'),
-                   dplyr::mutate(data.frame(RNAseq1_WT_D33_vs_KD_D12), exp = 'D33', timePoint = 'D33'),
-                   dplyr::mutate(data.frame(RNAseq1_WT_D63_vs_KD_D12), exp = 'D63', timePoint = 'D63')) %>%
-  dplyr::filter(! is.na(padj), abs(log2FoldChange) <= 15) %>%
-  dplyr::group_by(exp, gene) %>% 
-  dplyr::top_n(-1, wt = padj) %>%
-  dplyr::ungroup()
 
-    
-RNAseq1_WT_vs_earlyWT.genes <- subset(data.frame(RNAseq1_WT_D63_vs_WT_D6), padj <= 1e-25 & abs(log2FoldChange) >= 3)$gene
-report$RNAseq1.pval.WT_vs_earlyWT <- createGeneListHeatMap(RNAseq1_WT_vs_earlyWT, RNAseq1_WT_vs_earlyWT.genes, 8)
-
-save(list = ls(all.names = TRUE), file = 'savePoints/sp1.RData', envir = .GlobalEnv, compress = TRUE, compression_level = 9)
-
-
+save(list = ls(all.names = TRUE), file = 'savePoints/sp2.RData', envir = .GlobalEnv, compress = TRUE, compression_level = 9)
+#-~-~-~-~o~-~-~-~-~o-~-~-~-~o-~-~-~-~o-~-~-~-~o-~-~-~-~o-~-~-~-~o-~-~-~-~o-~-~-~-~o-~-~-~-~o-~-~-~-~
 
 
 
 
 # Add entrez and STRINGdb ids to the RNAseq data.
 #--------------------------------------------------------------------------------------------------
-ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl")
-
-### mapping <- getBM(attributes = c("ensembl_gene_id", "hgnc_symbol", "entrezgene"), mart = ensembl)
+ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl", host = "useast.ensembl.org")
 mapping <- getBM(attributes = c("ensembl_gene_id", "hgnc_symbol", "entrezgene_id", "entrezgene_accession"), mart = ensembl)
 mapping$entrezgene <- mapping$entrezgene_id
 
-RNAseq1_WT_vs_KD$ensembl       <- sub('\\.\\d+$', '', tx2gene[match(toupper(RNAseq1_WT_vs_KD$gene),     toupper(tx2gene$gene_name)),]$gene_id)
-RNAseq1_WT_vs_earlyWT$ensembl  <- sub('\\.\\d+$', '', tx2gene[match(toupper(RNAseq1_WT_vs_earlyWT$gene),     toupper(tx2gene$gene_name)),]$gene_id)
-RNAseq1_WT_vs_d12KD$ensembl    <- sub('\\.\\d+$', '', tx2gene[match(toupper(RNAseq1_WT_vs_d12KD$gene),     toupper(tx2gene$gene_name)),]$gene_id)
-RNAseq2_WT_TrpM_vs_KD$ensembl  <- sub('\\.\\d+$', '', tx2gene[match(toupper(RNAseq2_WT_TrpM_vs_KD$gene),     toupper(tx2gene$gene_name)),]$gene_id)
+# The mapping object is saved in 'data/bioMartMapping.RData' in case biomart goes off-line.
 
-
-# (!) Here we reduce the data sets so that they can be annotated quicker.
-RNAseq1_WT_vs_KD        <- subset(RNAseq1_WT_vs_KD, abs(log2FoldChange) >= 2 & padj <= 1e-3)
-RNAseq1_WT_vs_earlyWT   <- subset(RNAseq1_WT_vs_earlyWT, abs(log2FoldChange) >= 2 & padj <= 1e-3)
-RNAseq1_WT_vs_d12KD     <- subset(RNAseq1_WT_vs_d12KD, abs(log2FoldChange)   >= 2 & padj <= 1e-3)
-RNAseq2_WT_TrpM_vs_KD   <- subset(RNAseq2_WT_TrpM_vs_KD, abs(log2FoldChange) >= 2 & padj <= 1e-3)
-
-
-RNAseq1_WT_vs_KD <- string_db$map(data.frame(RNAseq1_WT_vs_KD), "gene", removeUnmappedRows = FALSE)
-i <- which(is.na(RNAseq1_WT_vs_KD$STRING_id))
-RNAseq1_WT_vs_KD[i,]$STRING_id <- report$string_db.alt.aliases[match(toupper(RNAseq1_WT_vs_KD[i,]$gene), toupper(report$string_db.alt.aliases$ids)),]$STRING_id
-
-
-
-RNAseq1_WT_vs_earlyWT <- string_db$map(data.frame(RNAseq1_WT_vs_earlyWT), "gene", removeUnmappedRows = FALSE)
-i <- which(is.na(RNAseq1_WT_vs_earlyWT$STRING_id))
-RNAseq1_WT_vs_earlyWT[i,]$STRING_id <- report$string_db.alt.aliases[match(toupper(RNAseq1_WT_vs_earlyWT[i,]$gene), toupper(report$string_db.alt.aliases$ids)),]$STRING_id
-
-
-RNAseq1_WT_vs_d12KD <- string_db$map(data.frame(RNAseq1_WT_vs_d12KD), "gene", removeUnmappedRows = FALSE)
-i <- which(is.na(RNAseq1_WT_vs_d12KD$STRING_id))
-RNAseq1_WT_vs_d12KD[i,]$STRING_id <- report$string_db.alt.aliases[match(toupper(RNAseq1_WT_vs_d12KD[i,]$gene), toupper(report$string_db.alt.aliases$ids)),]$STRING_id
-
-
-RNAseq2_WT_TrpM_vs_KD <- string_db$map(data.frame(RNAseq2_WT_TrpM_vs_KD), "gene", removeUnmappedRows = FALSE)
-i <- which(is.na(RNAseq2_WT_TrpM_vs_KD$STRING_id))
-RNAseq2_WT_TrpM_vs_KD[i,]$STRING_id <- report$string_db.alt.aliases[match(toupper(RNAseq2_WT_TrpM_vs_KD[i,]$gene), toupper(report$string_db.alt.aliases$ids)),]$STRING_id
-
-
-# Here we add entrezgene ids to the dataset for creating pathway views.
-RNAseq1_WT_vs_earlyWT$entrezgene     <- mapping[match(RNAseq1_WT_vs_earlyWT$ensembl, mapping$ensembl_gene_id),]$entrezgene
-RNAseq1_WT_vs_d12KD$entrezgene     <- mapping[match(RNAseq1_WT_vs_d12KD$ensembl, mapping$ensembl_gene_id),]$entrezgene
-RNAseq2_WT_TrpM_vs_KD$entrezgene     <- mapping[match(RNAseq2_WT_TrpM_vs_KD$ensembl, mapping$ensembl_gene_id),]$entrezgene
-
-
+RNAseq1_WT_vs_KD      <- addAndExtendSTRINGids(RNAseq1_WT_vs_KD)
+RNAseq1_WT_vs_d6_KD   <- addAndExtendSTRINGids(RNAseq1_WT_vs_d6_KD)
+RNAseq1_WT_vs_d12_KD  <- addAndExtendSTRINGids(RNAseq1_WT_vs_d12_KD)
+RNAseq2_WT_TrpM_vs_KD <- addAndExtendSTRINGids(RNAseq2_WT_TrpM_vs_KD)
 
 
 # KEGG pathway enrichments
@@ -476,90 +419,44 @@ RNAseq2_WT_TrpM_vs_KD$entrezgene     <- mapping[match(RNAseq2_WT_TrpM_vs_KD$ense
 detach('package:RMySQL', unload = TRUE, character.only = TRUE)
 
 
+invisible(lapply(split(RNAseq1_WT_vs_KD, RNAseq1_WT_vs_KD$timePoint), function(x){
+  o <- list()
+  o$title <- paste(x$timePoint[1], 'WT vs', 
+                 ifelse(as.integer(str_extract(x$timePoint[1], '\\d+')) > 12, 'D12 KD', paste0(x$timePoint[1], ' KD')))
+  
+  file <- paste0('KEGG_pathways_', gsub(' ', '_', o$title))
 
-
-# JKE  all five time points
-
-RNAseq1_WT_D6_vs_KD_D6, RNAseq1_WT_D9_vs_KD_D9, RNAseq1_WT_D12_vs_KD_D12, RNAseq1_WT_D33_vs_KD_D12, RNAseq1_WT_D63_vs_KD_D12
-
-
-
-
-
-# WT_D9_vs_KD_D9 -- KEGG enrichment analysis with STRINGdb.  
-report$WT_D9_vs_KD_D9.KEGG <- createKEGGenrichmentTable(subset(RNAseq2_WT_TrpM_vs_KD, exp == 'WT D9' & 
-                                                                 ! is.na(log2FoldChange) &  
-                                                                 ! is.na(STRING_id) & 
-                                                                 padj <= 1e-5 & 
-                                                                 abs(log2FoldChange) >= 2 &
-                                                                 abs(log2FoldChange) <= 15))
-
-report$WT_D9_vs_KD_D9.KEGG.plot <- termEnrichmentPlot(report$WT_D9_vs_KD_D9.KEGG, 15, 'D9 WT vs. D9 KD')
-ggsave(report$WT_D9_vs_KD_D9.KEGG.plot , file = 'paper_figures_and_tables/WT_D9_vs_KD_D9.KEGG.plot.pdf')
-
-report$WT_D9_vs_KD_D9.KEGG.UP.plot <- termEnrichmentPlot(report$WT_D9_vs_KD_D9.KEGG, 15, 'D9 WT vs. D9 KD', dir = 'up')
-ggsave(report$WT_D9_vs_KD_D9.KEGG.UP.plot, file = 'paper_figures_and_tables/WT_D9_vs_KD_D9.KEGG.UP.plot.pdf')
-
-report$WT_D9_vs_KD_D9.KEGG.DOWN.plot <- termEnrichmentPlot(report$WT_D9_vs_KD_D9.KEGG, 15, 'D9 WT vs. D9 KD', dir = 'down')
-ggsave(report$WT_D63_vs_KD_D12.KEGG.DOWN.plot, file = 'paper_figures_and_tables/WT_D63_vs_KD_D12.KEGG.DOWN.plot.pdf')
-
-
-
-
-report$WT_D63_vs_KD_D12.KEGG <- createKEGGenrichmentTable(subset(RNAseq1_WT_vs_d12KD, exp == 'D12' & 
-                                                                 ! is.na(log2FoldChange) &  
-                                                                 ! is.na(STRING_id) & 
-                                                                 padj <= 1e-5 & 
-                                                                 abs(log2FoldChange) >= 2 &
-                                                                 abs(log2FoldChange) <= 15))
-
-report$WT_D63_vs_KD_D12.KEGG.plot <- termEnrichmentPlot(report$WT_D63_vs_KD_D12.KEGG, 15, 'D63 WT vs. D12 KD')
-ggsave(report$WT_D63_vs_KD_D12.KEGG.plot , file = 'paper_figures_and_tables/WT_D63_vs_KD_D12.KEGG.plot.pdf')
-
-report$WT_D63_vs_KD_D12.KEGG.UP.plot <- termEnrichmentPlot(report$WT_D63_vs_KD_D12.KEGG, 15, 'D63 WT vs. D12 KD', dir = 'up')
-ggsave(report$WT_D63_vs_KD_D12.KEGG.UP.plot, file = 'paper_figures_and_tables/WT_D63_vs_KD_D12.KEGG.UP.plot.pdf')
-
-report$WT_D63_vs_KD_D12.KEGG.DOWN.plot <- termEnrichmentPlot(report$WT_D63_vs_KD_D12.KEGG, 15, 'D63 WT vs. D12 KD', dir = 'down')
-ggsave(report$WT_D63_vs_KD_D12.KEGG.DOWN.plot, file = 'paper_figures_and_tables/WT_D63_vs_KD_D12.KEGG.DOWN.plot.pdf')
-
-### View(subset(report$WT_D9_vs_KD_D9.KEGG, genesUP < genesDOWN))
-
-
-# (!) Creating KEGG pathway views is slow.  Only run if they are not already present.
-createKEGGschematics(subset(RNAseq2_WT_TrpM_vs_KD, exp == 'WT D9' & 
-                              ! is.na(log2FoldChange) &  
-                              ! is.na(entrezgene) & 
-                              padj <= 1e-5 & 
-                              abs(log2FoldChange) >= 2 &
-                              abs(log2FoldChange) <= 15),
-                     schematicPrefix = 'WT_D9_vs_KD_D9',
-                     pathways = report$WT_D9_vs_KD_D9.KEGG[1:10,]$term_id)
-
+  o$table     <- createKEGGenrichmentTable(subset(x, ! is.na(log2FoldChange) & ! is.na(STRING_id) & padj <= 1e-3 & abs(log2FoldChange) >= 2))
+  o$plot      <- termEnrichmentPlot(o$table, 15, o$title, file = paste0('figures_and_tables/RNAseq1_', file, '.pdf'))
+  o$up.plot   <- termEnrichmentPlot(o$table, 15, o$title, file = paste0('figures_and_tables/RNAseq1_', file, '.up.pdf'), dir = 'up')
+  o$down.plot <- termEnrichmentPlot(o$table, 15, o$title, file = paste0('figures_and_tables/RNAseq1_', file, '.down.pdf'), dir = 'down')
+  o
+}))
 
 
 
 # GO term enrichment
 #--------------------------------------------------------------------------------------------------
 report$WT_D9_vs_KD_D9.GO <- 
-  string_db$get_enrichment(subset(RNAseq2_WT_TrpM_vs_KD, exp == 'WT D9' & 
+  subset(string_db$get_enrichment(subset(RNAseq2_WT_TrpM_vs_KD, exp == 'WT D9' & 
                                     ! is.na(log2FoldChange) &  
                                     ! is.na(STRING_id) & 
-                                    padj <= 1e-5 & 
-                                    abs(log2FoldChange) >= 2 &
-                                    abs(log2FoldChange) <= 15)$STRING_id, category = 'Process', methodMT = "fdr", iea = FALSE)
-report$WT_D9_vs_KD_D9.GO <- subset(report$WT_D9_vs_KD_D9.GO, pvalue_fdr <= 0.05)
+                                    padj <= 1e-3 & 
+                                    abs(log2FoldChange) >= 2)$STRING_id, category = 'Process', methodMT = "fdr", iea = FALSE),
+         pvalue_fdr <= 0.05)
 
 
 report$TrpM_D9_vs_KD_D9.GO <- 
-  string_db$get_enrichment(subset(RNAseq2_WT_TrpM_vs_KD, exp == 'TrpM D9' & 
+  subset(string_db$get_enrichment(subset(RNAseq2_WT_TrpM_vs_KD, exp == 'TrpM D9' & 
                                     ! is.na(log2FoldChange) &  
                                     ! is.na(STRING_id) & 
-                                    padj <= 1e-5 & 
-                                    abs(log2FoldChange) >= 2 &
-                                    abs(log2FoldChange) <= 15)$STRING_id, category = 'Process', methodMT = "fdr", iea = FALSE)
-report$TrpM_D9_vs_KD_D9.GO <- subset(report$TrpM_D9_vs_KD_D9.GO , pvalue_fdr <= 0.05)
+                                    padj <= 1e-3 & 
+                                    abs(log2FoldChange) >= 2)$STRING_id, category = 'Process', methodMT = "fdr", iea = FALSE), 
+         pvalue_fdr <= 0.05)
 
 
+save(list = ls(all.names = TRUE), file = 'savePoints/sp3.RData', envir = .GlobalEnv, compress = TRUE, compression_level = 9)
+#-~-~-~-~o~-~-~-~-~o-~-~-~-~o-~-~-~-~o-~-~-~-~o-~-~-~-~o-~-~-~-~o-~-~-~-~o-~-~-~-~o-~-~-~-~o-~-~-~-~
 
 
 

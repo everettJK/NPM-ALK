@@ -17,6 +17,101 @@ make_square <- function(p, fudge=1) {
 
 ppNum <- function (n)  format(n, big.mark = ",", scientific = FALSE, trim = TRUE)
 
+
+# Convenience function to add gene names from tx2gene to contrasts by using transcript id row names as a lookup.
+# Requires global tx2gene object.
+addGeneNamesToContrast <- function(contrast){
+  contrast$gene <- tx2gene[match(row.names(contrast), tx2gene$gene_id),]$gene_name
+  contrast
+}
+
+
+createVolcanoPlot <- function(RNAseq, title, file){
+  plot.data <- subset(data.frame(RNAseq), ! is.na(padj) & abs(log2FoldChange) <= 15)
+  plot.data$class <- ifelse(plot.data$padj > 0.05, 'No significant change', ifelse(plot.data$log2FoldChange >= 0, 'Increased', 'Decreased'))
+  plot.data$class <- factor(as.character(plot.data$class), levels = c('No significant change', 'Increased', 'Decreased'))
+  
+  plot.data$foldChange <- 2^plot.data$log2FoldChange
+  gc()
+  write.xlsx2(plot.data, file = sub('\\.\\S+$', '.xlsx', file), col.names = TRUE, row.names = TRUE)
+  
+  p <- ggplot(plot.data, aes(foldChange, -log10(padj), fill = class)) +
+    theme_bw() +
+    scale_fill_manual(name = 'Transcription', values = c('gray50', 'red', 'dodgerblue2')) +
+    geom_point(shape = 21, size = 2, alpha = 0.5, color = 'black') +
+    scale_x_log10() +
+    annotation_logticks(base = 10, sides="b") +
+    theme(panel.border = element_blank(), 
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(), 
+          axis.line = element_line(colour = "black")) +
+    ggtitle(title) +
+    guides(fill = guide_legend(override.aes=list(shape=21, size = 3)),
+           shape = guide_legend(override.aes=list(size = 3))) +
+    labs(x= 'Fold Change', y = '-log10(adjusted p-value)')
+  
+  ggsave(p, file = file)
+  p
+}
+
+
+
+# Convenience function for adding truncated ensembl ids to the RNAseq data, mapping STRING ids, 
+# expanding STRING annotations with aliases from HGNC, and then adding entrez gene names via bioMart.
+# This function is dependent upon global objects tx2gene, string_db, report$string_db.alt.aliases, and mapping.
+addAndExtendSTRINGids <- function(d){
+  d$ensembl       <- sub('\\.\\d+$', '', tx2gene[match(toupper(d$gene), toupper(tx2gene$gene_name)),]$gene_id)
+  d <- subset(d, abs(log2FoldChange) >= 2 & padj <= 1e-3)
+  
+  d <- string_db$map(data.frame(d), "gene", removeUnmappedRows = FALSE)
+  i <- which(is.na(d$STRING_id))
+  d[i,]$STRING_id <- report$string_db.alt.aliases[match(toupper(d[i,]$gene), toupper(report$string_db.alt.aliases$ids)),]$STRING_id
+  
+  d$entrezgene     <- mapping[match(d$ensembl, mapping$ensembl_gene_id),]$entrezgene
+  d
+}
+
+
+
+
+
+createGeneListHeatMap <- function(data, geneList, scaleLimit, file, orderByFoldChange = TRUE){
+  plot.data      <- subset(data, gene %in% geneList)
+  plot.data$gene <- factor(as.character(plot.data$gene), levels = rev(geneList))
+  plot.data$sig  <- factor(ifelse(plot.data$padj <= 0.05, TRUE, FALSE), levels = c(TRUE, FALSE))
+  plot.data$timePoint <- factor(as.character(plot.data$timePoint), levels =  gtools::mixedsort(unique(plot.data$timePoint)))
+  
+  midScaleMark <- floor(scaleLimit/2)
+  
+  if(orderByFoldChange){
+    plot.data <- group_by(plot.data, gene) %>% mutate(rowsum = sum(log2FoldChange)) %>% ungroup() %>% arrange(rowsum) 
+    plot.data$gene <- factor(as.character(plot.data$gene), levels = unique(plot.data$gene))
+  }
+  
+  p <- make_square(ggplot(plot.data, aes(x = timePoint, y = gene, fill = log2FoldChange, shape = sig)) +
+                theme_bw() +
+                geom_tile(color="gray90",size=0.6) + 
+                scale_shape_manual(values = c(42, 32)) +
+                geom_point(size = 2, color = 'gray25', show.legend = FALSE) +
+                scale_fill_gradient2(name = 'Fold change', low="navy", mid="white", high="red", midpoint=0, 
+                                     limits=c(-scaleLimit, scaleLimit), breaks = c(-scaleLimit, -midScaleMark, 0, midScaleMark, scaleLimit)) + 
+                scale_y_discrete(expand=c(0,0)) +
+                scale_x_discrete(expand=c(0,0)) +
+                labs(x='', y = '') +
+                theme(axis.text.x = element_text(angle = 90, hjust = 1),
+                      panel.border = element_blank(), 
+                      panel.grid.major = element_blank(),
+                      panel.grid.minor = element_blank(), 
+                      axis.line = element_line(colour = "black"),
+                      legend.position="bottom") +
+                guides(fill=guide_colorbar(title.position = "top", barwidth=5)), fudge = 0.75) 
+
+  ggsave(p, file = file)
+  p
+}
+
+
+
 timePoint2numeric <- function(x, interval = 'days'){
   timePointType <- stringr::str_match(x, '[DMY]')
   if(as.logical(is.na(timePointType))) timePointType <- 'X'
@@ -47,7 +142,7 @@ timePoint2numeric <- function(x, interval = 'days'){
 }
 
 
-termEnrichmentPlot <- function(d, n, t, dir = 'both'){
+termEnrichmentPlot <- function(d, n, t, file, dir = 'both'){
   d <- dplyr::arrange(d, pvalue_fdr)
   if(dir == 'down') d <- dplyr::arrange(d, genesUP - genesDOWN, pvalue_fdr)
   if(dir == 'up')   d <- dplyr::arrange(d, genesDOWN - genesUP, pvalue_fdr)
@@ -65,7 +160,8 @@ termEnrichmentPlot <- function(d, n, t, dir = 'both'){
   d$var <- ifelse(d$var == 'genesUP', 'Increased', 'Decreased')
   d$label <- factor(d$label, levels = labels)
 
-  ggplot(d, aes(label, val, fill = var)) + 
+  p <- 
+    ggplot(d, aes(label, val, fill = var)) + 
     theme_bw() +
     geom_bar(color = 'black', stat='identity') + 
     scale_fill_manual(name = 'Transcription', values = c('dodgerblue2', 'red')) +
@@ -75,6 +171,9 @@ termEnrichmentPlot <- function(d, n, t, dir = 'both'){
           panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
     #guides(fill=FALSE) +
     ggtitle(t)
+  
+  ggsave(p, file = file)
+  p
 }
 
 
