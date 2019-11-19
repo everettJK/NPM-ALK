@@ -235,6 +235,7 @@ RNAseq1_Y664F_vs_WT <-
   dplyr::mutate(gene = toupper(gene))
 
 
+
 RNAseq1_Y664F_vs_KD <- 
   dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq1_Y664F_D9_vs_KD_D9),   exp = 'Y664F D9', timePoint = 'D9'),
                    dplyr::mutate(data.frame(RNAseq1_Y664F_D12_vs_KD_D12), exp = 'Y664F D12', timePoint = 'D12')) %>%
@@ -305,6 +306,22 @@ report$Tcell_sig_heatmap     <- createGeneListHeatMap(RNAseq1_WT_vs_KD, Tcell_si
 report$Tcell_recp_heatmap    <- createGeneListHeatMap(RNAseq1_WT_vs_KD, Tcell_recp,    11, 'figures_and_tables/RNAseq1_WT_vs_KD_Tcell_recp_heatmap.pdf')
 report$NonTcell_spec_heatmap <- createGeneListHeatMap(RNAseq1_WT_vs_KD, NonTcell_spec, 11, 'figures_and_tables/RNAseq1_WT_vs_KD_NonTcell_spec_heatmap.pdf')
 report$EmbStemSpec_heatmap   <- createGeneListHeatMap(RNAseq1_WT_vs_KD, EmbStemSpec,   11, 'figures_and_tables/RNAseq1_WT_vs_KD_EmbStemSpec_heatmap.pdf')
+
+
+#------------------
+RNAseq2_TrpM_vs_WT
+RNAseq1_Y664F_vs_WT
+
+a <- RNAseq2_TrpM_vs_WT[grep('D9', RNAseq2_TrpM_vs_WT$timePoint),]
+b <- subset(RNAseq1_Y664F_vs_WT, timePoint == 'D9')
+a$timePoint <- 'TrpM'
+b$timePoint <- 'Y664F'
+o <- bind_rows(a, b)
+o$timePoint <- factor(o$timePoint, levels = c('Y664F', 'TrpM'))
+o <- subset(o, gene %in% c(Tcell_sig, Tcell_TFs, Tcell_recp, upInWnt))
+createGeneListHeatMap(o, Tcell_sig, ceiling(max(abs(o$log2FoldChange))),  'figures_and_tables/D9_WT_Y664F_TrpM_vs_KD_Tcell_sig_heatmap.pdf')
+
+#--------------
 
 
 # Create day 9 plots for WT, Y664F, and TrpM for select gene sets.

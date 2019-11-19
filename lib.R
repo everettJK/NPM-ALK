@@ -91,6 +91,7 @@ createGeneListHeatMap <- function(data, geneList, scaleLimit, file, orderByFoldC
   p <- make_square(ggplot(plot.data, aes(x = timePoint, y = gene, fill = log2FoldChange, shape = sig)) +
                 theme_bw() +
                 geom_tile(color="gray90",size=0.6) + 
+                #geom_tile(color="black",size=0.6) +
                 scale_shape_manual(values = c(42, 32)) +
                 geom_point(size = 2, color = 'gray25', show.legend = FALSE) +
                 scale_fill_gradient2(name = 'Fold change', low="navy", mid="white", high="red", midpoint=0, 
