@@ -331,6 +331,8 @@ preVsPostFreqPlot <- function(sites, daysCutOff, oncoGenes, nGenesToLabel = 5, d
   
   ggplot(d, aes(preTransplant, postTransplant, color = log10(genesPerPos), shape = oncoGene)) +
     theme_bw() +
+    xlim(c(0, max(c(d$preTransplant, d$postTransplant)))) +
+    ylim(c(0, max(c(d$preTransplant, d$postTransplant)))) +
     scale_shape_manual(name = 'Oncogene', values = c(16, 15)) +
     scale_color_gradientn(name = 'log10(Data density)', colors = c("green3", "gold2", "red")) +
     geom_point(alpha = 0.4, size = 4, stroke = 0) +
@@ -338,7 +340,7 @@ preVsPostFreqPlot <- function(sites, daysCutOff, oncoGenes, nGenesToLabel = 5, d
     geom_abline(slope=1, intercept=0, color='blue', size=0.5) +
     guides(shape = guide_legend(override.aes = list(stroke = 2))) +
     geom_text_repel(aes(label=geneLabel), color='black', size=2.5,  direction='y',box.padding=1.0, point.padding=1.25) +
-    theme(legend.position="bottom") +
+    theme(legend.position="bottom", panel.grid.minor = element_blank(),panel.background = element_blank()) +
     guides(shape = guide_legend(title.position = "top")) +
     guides(color=FALSE) +
     labs(x = paste0('Earlier time points (<= ', daysCutOff, ' days, ', ppNum(n_distinct(subset(sites, timePointDays <= daysCutOff)$posid)), ' sites)'),
