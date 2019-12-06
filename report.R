@@ -434,6 +434,27 @@ RNAseq1_WT_vs_d12_KD  <- addAndExtendSTRINGids(RNAseq1_WT_vs_d12_KD)
 RNAseq2_WT_TrpM_vs_KD <- addAndExtendSTRINGids(RNAseq2_WT_TrpM_vs_KD)
 
 
+# GSEA
+keggGenes <- gage::kegg.gsets(species = "hsa", id.type = "kegg")
+
+o <- subset(RNAseq1_WT_vs_KD, timePoint == 'D9')
+ranks <- o$log2FoldChange
+names(ranks) <- o$entrezgene
+barplot(sort(ranks, decreasing = T))
+
+ranks <- ranks[! is.na(names(ranks))]
+fgseaRes <- fgsea(keggGenes$kg.sets, ranks, minSize = 15, maxSize = 500, nperm=1000)
+head(fgseaRes[order(padj, -abs(NES)), ], n=10)
+
+barplot(sort(ranks, decreasing = T))
+plotEnrichment(keggGenes$kg.sets[["hsa04062 Chemokine signaling pathway"]], ranks)
+plotEnrichment(keggGenes$kg.sets[["hsa04630 Jak-STAT signaling pathway"]], ranks)
+
+
+
+
+
+
 # KEGG pathway enrichments
 #--------------------------------------------------------------------------------------------------
 # Detach the RMySQL package because it interferes with STRINGdb

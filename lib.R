@@ -61,6 +61,7 @@ createVolcanoPlot <- function(RNAseq, title, file){
 # This function is dependent upon global objects tx2gene, string_db, report$string_db.alt.aliases, and mapping.
 addAndExtendSTRINGids <- function(d){
   d$ensembl       <- sub('\\.\\d+$', '', tx2gene[match(toupper(d$gene), toupper(tx2gene$gene_name)),]$gene_id)
+  
   d <- subset(d, abs(log2FoldChange) >= 2 & padj <= 1e-3)
   
   d <- string_db$map(data.frame(d), "gene", removeUnmappedRows = FALSE)
