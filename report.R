@@ -203,6 +203,7 @@ RNAseq1_WT_vs_KD <-
   dplyr::mutate(gene = toupper(gene))
 
 
+
 RNAseq1_WT_vs_d6_KD <- 
   dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq1_WT_D9_vs_WT_D6),  exp = 'D9',  timePoint = 'D9'),
                    dplyr::mutate(data.frame(RNAseq1_WT_D12_vs_WT_D6), exp = 'D12', timePoint = 'D12'),
@@ -434,21 +435,65 @@ RNAseq1_WT_vs_d12_KD  <- addAndExtendSTRINGids(RNAseq1_WT_vs_d12_KD)
 RNAseq2_WT_TrpM_vs_KD <- addAndExtendSTRINGids(RNAseq2_WT_TrpM_vs_KD)
 
 
+
+# NA D6 v KD D6
+# NA D9 v KD D9
+# NA D12 v KD D12
+# NA D12 v KD D33
+# NA D12 v KD D63
+
+
 # GSEA
 keggGenes <- gage::kegg.gsets(species = "hsa", id.type = "kegg")
+hallmark <- unlist(lapply(readLines('data/h.all.v7.0.entrez.gmt'), function(x){
+              x <- unlist(strsplit(x, '\t'))
+              r <- list()
+              r[[x[1]]] <- x[3:length(x)]
+              r
+            }), recursive = FALSE)
 
-o <- subset(RNAseq1_WT_vs_KD, timePoint == 'D9')
-ranks <- o$log2FoldChange
-names(ranks) <- o$entrezgene
-barplot(sort(ranks, decreasing = T))
 
-ranks <- ranks[! is.na(names(ranks))]
-fgseaRes <- fgsea(keggGenes$kg.sets, ranks, minSize = 15, maxSize = 500, nperm=1000)
-head(fgseaRes[order(padj, -abs(NES)), ], n=10)
 
-barplot(sort(ranks, decreasing = T))
-plotEnrichment(keggGenes$kg.sets[["hsa04062 Chemokine signaling pathway"]], ranks)
-plotEnrichment(keggGenes$kg.sets[["hsa04630 Jak-STAT signaling pathway"]], ranks)
+fgseaEnrichmentPlotFormat <- function(x, title){
+  dataPointMarks.min <- max(x$data$y) + 0.1 - 0.05
+  dataPointMarks.max <- max(x$data$y) + 0.1 + 0.05
+  dataPointMarks.width <- max(x$data$x)/1000
+  
+  ggplot(x$data, aes(x, y)) + 
+    theme_bw() +
+    geom_hline(yintercept = 0, size = 1) +
+    geom_smooth(se = FALSE, color = 'green3', size = 2) +
+    geom_rect(data = x$data, mapping=aes(xmin = x - dataPointMarks.width/2, xmax = x +  dataPointMarks.width/2, ymin = dataPointMarks.min, ymax = dataPointMarks.max)) +
+    labs(x = 'Rank in Ordered Dataset', y = 'Enrichment Score') +
+    scale_x_continuous(label=scales::comma) +
+    theme(axis.text=element_text(size=12),  axis.title = element_text(size=14), plot.title = element_text(size = 18), plot.margin = unit(c(1,1,1,1), "cm")) +
+    ggtitle(title)
+}
+
+
+lapply(c("D6", "D9", "D12", "D33", "D63"), function(tp){
+  o <- subset(RNAseq1_WT_vs_KD, timePoint == tp)
+  # ranks <- o$log2FoldChange
+  ranks <- o$stat
+  names(ranks) <- o$entrezgene
+  ranks <- ranks[! is.na(names(ranks))]
+
+  p <- ggplot(data.frame(y = sort(ranks, decreasing = TRUE), x = 1:length(ranks)), aes(x, y)) + 
+    theme_bw() +
+    geom_bar(stat = "identity", width=1.05, fill="black") +
+    scale_x_continuous(label=scales::comma) +
+    theme(axis.text=element_text(size=12),  axis.title = element_text(size=14), plot.title = element_text(size = 18), plot.margin = unit(c(1,1,1,1), "cm")) +
+    ggtitle(paste0(tp, ' ordered gene list stats')) +
+    labs(x = 'Gene', y = 'Stat')
+    
+  ggsave(p, file = paste0('figures_and_tables/GSEA/', tp, '_WTvsKD_ordered_gene_list_histogram.png'))
+  
+  invisible(mapply(function(pathway, proteins){
+    x <- plotEnrichment(proteins, ranks)
+    p <- fgseaEnrichmentPlotFormat(x, pathway)
+    ggsave(p, file = paste0('figures_and_tables/GSEA/', tp, '_WTvsKD_', sprintf("%.1f", max(x$data$y)), ',', sprintf("%.1f", min(x$data$y)), '_', pathway, '.png'))
+  }, names(hallmark), hallmark))
+})
 
 
 

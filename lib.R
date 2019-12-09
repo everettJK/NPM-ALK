@@ -62,7 +62,7 @@ createVolcanoPlot <- function(RNAseq, title, file){
 addAndExtendSTRINGids <- function(d){
   d$ensembl       <- sub('\\.\\d+$', '', tx2gene[match(toupper(d$gene), toupper(tx2gene$gene_name)),]$gene_id)
   
-  d <- subset(d, abs(log2FoldChange) >= 2 & padj <= 1e-3)
+  ### d <- subset(d, abs(log2FoldChange) >= 2 & padj <= 1e-3)
   
   d <- string_db$map(data.frame(d), "gene", removeUnmappedRows = FALSE)
   i <- which(is.na(d$STRING_id))
