@@ -471,7 +471,7 @@ fgseaEnrichmentPlotFormat <- function(x, title){
 }
 
 
-lapply(c("D6", "D9", "D12", "D33", "D63"), function(tp){
+invisible(lapply(c("D6", "D9", "D12", "D33", "D63"), function(tp){
   o <- subset(RNAseq1_WT_vs_KD, timePoint == tp)
   # ranks <- o$log2FoldChange
   ranks <- o$stat
@@ -489,11 +489,15 @@ lapply(c("D6", "D9", "D12", "D33", "D63"), function(tp){
   ggsave(p, file = paste0('figures_and_tables/GSEA/', tp, '_WTvsKD_ordered_gene_list_histogram.png'))
   
   invisible(mapply(function(pathway, proteins){
-    x <- plotEnrichment(proteins, ranks)
+    x <- plotEnrichment(proteins, ranks, gseaParam = 1)
+    set.seed(46)
+    pathwayList <- list()
+    pathwayList[[pathway]] <- proteins
+    fgseaRes <- fgsea(pathwayList, ranks, nperm=10000)
     p <- fgseaEnrichmentPlotFormat(x, pathway)
-    ggsave(p, file = paste0('figures_and_tables/GSEA/', tp, '_WTvsKD_', sprintf("%.1f", max(x$data$y)), ',', sprintf("%.1f", min(x$data$y)), '_', pathway, '.png'))
+    ggsave(p, file = paste0('figures_and_tables/GSEA/', tp, '_WTvsKD_', paste0(sprintf("%.2f", fgseaRes$NES), '_NES'), '_', pathway, '.png'))
   }, names(hallmark), hallmark))
-})
+}))
 
 
 
