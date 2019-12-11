@@ -482,15 +482,15 @@ invisible(lapply(c("D6", "D9", "D12", "D33", "D63"), function(tp){
     theme_bw() +
     geom_bar(stat = "identity", width=1.05, fill="black") +
     scale_x_continuous(label=scales::comma) +
-    theme(axis.text=element_text(size=12),  axis.title = element_text(size=14), plot.title = element_text(size = 18), plot.margin = unit(c(1,1,1,1), "cm")) +
+    theme(axis.text=element_text(size=12),  axis.title = element_text(size=14), plot.title = element_text(size = 16), plot.margin = unit(c(1,1,1,1), "cm")) +
     ggtitle(paste0(tp, ' ordered gene list stats')) +
     labs(x = 'Gene', y = 'Stat')
     
   ggsave(p, file = paste0('figures_and_tables/GSEA/', tp, '_WTvsKD_ordered_gene_list_histogram.png'))
   
   invisible(mapply(function(pathway, proteins){
-    x <- plotEnrichment(proteins, ranks, gseaParam = 1)
     set.seed(46)
+    x <- plotEnrichment(proteins, ranks, gseaParam = 1)
     pathwayList <- list()
     pathwayList[[pathway]] <- proteins
     fgseaRes <- fgsea(pathwayList, ranks, nperm=10000)
