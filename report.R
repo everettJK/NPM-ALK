@@ -2,13 +2,13 @@ library(GenomicRanges)
 library(STRINGdb)
 library(biomaRt)
 library(DESeq2)
-library(xlsx)
 library(gtools)
 library(tidyverse)
 library(pathview)
 library(ggrepel)
 library(RColorBrewer)
 library(xlsx)
+library(fgsea)
 source('./lib.R')
 options(stringsAsFactors = FALSE, useFancyQuotes = FALSE) 
 write(c(date(), capture.output(sessionInfo())), file = 'sessionInfo.txt')
@@ -466,7 +466,7 @@ fgseaEnrichmentPlotFormat <- function(x, title){
     geom_rect(data = x$data, mapping=aes(xmin = x - dataPointMarks.width/2, xmax = x +  dataPointMarks.width/2, ymin = dataPointMarks.min, ymax = dataPointMarks.max)) +
     labs(x = 'Rank in Ordered Dataset', y = 'Enrichment Score') +
     scale_x_continuous(label=scales::comma) +
-    theme(axis.text=element_text(size=12),  axis.title = element_text(size=14), plot.title = element_text(size = 18), plot.margin = unit(c(1,1,1,1), "cm")) +
+    theme(axis.text=element_text(size=12),  axis.title = element_text(size=12), plot.title = element_text(size = 14), plot.margin = unit(c(1,1,1,1), "cm")) +
     ggtitle(title)
 }
 
