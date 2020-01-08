@@ -60,15 +60,28 @@ createVolcanoPlot <- function(RNAseq, title, file){
 # expanding STRING annotations with aliases from HGNC, and then adding entrez gene names via bioMart.
 # This function is dependent upon global objects tx2gene, string_db, report$string_db.alt.aliases, and mapping.
 addAndExtendSTRINGids <- function(d){
+  
+  HGNC <- read.table('data/HGNC.txt', sep = '\t', header = TRUE, comment.char = '', quote = '')
+  
   d$ensembl       <- sub('\\.\\d+$', '', tx2gene[match(toupper(d$gene), toupper(tx2gene$gene_name)),]$gene_id)
   
   ### d <- subset(d, abs(log2FoldChange) >= 2 & padj <= 1e-3)
   
   d <- string_db$map(data.frame(d), "gene", removeUnmappedRows = FALSE)
   i <- which(is.na(d$STRING_id))
+  
   d[i,]$STRING_id <- report$string_db.alt.aliases[match(toupper(d[i,]$gene), toupper(report$string_db.alt.aliases$ids)),]$STRING_id
   
-  d$entrezgene     <- mapping[match(d$ensembl, mapping$ensembl_gene_id),]$entrezgene
+  d$entrezgene1     <- mapping[match(d$ensembl, mapping$ensembl_gene_id),]$entrezgene
+  d[is.na(d$entrezgene1),]$entrezgene1 <- 0
+  
+  d$entrezgene2     <- HGNC[match(d$gene, HGNC$Approved.Symbol),]$Entrez.Gene.ID
+  d[is.na(d$entrezgene2),]$entrezgene2 <- 0
+  
+  d$entrezgene      <- ifelse(d$entrezgene1 > d$entrezgene2, d$entrezgene1, d$entrezgene2)
+  
+  d$entrezgene1 <- NULL
+  d$entrezgene2 <- NULL
   d
 }
 

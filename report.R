@@ -203,7 +203,6 @@ RNAseq1_WT_vs_KD <-
   dplyr::mutate(gene = toupper(gene))
 
 
-
 RNAseq1_WT_vs_d6_KD <- 
   dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq1_WT_D9_vs_WT_D6),  exp = 'D9',  timePoint = 'D9'),
                    dplyr::mutate(data.frame(RNAseq1_WT_D12_vs_WT_D6), exp = 'D12', timePoint = 'D12'),
@@ -269,6 +268,17 @@ RNAseq2_WT_TrpM_vs_KD <-
 RNAseq2_TrpM_vs_WT <- 
   dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq2_TrpM_D6_vs_WT_D6), exp = 'D6', timePoint = 'D6'),
                    dplyr::mutate(data.frame(RNAseq2_TrpM_D9_vs_WT_D9), exp = 'D9', timePoint = 'D9')) %>%
+  dplyr::mutate(exp = factor(exp, levels = c('D6', 'D9'))) %>%
+  dplyr::filter(abs(log2FoldChange) <= 15) %>%
+  tidyr::replace_na(list(padj = 1)) %>%
+  dplyr::group_by(exp, gene) %>% 
+  dplyr::top_n(-1, wt = padj) %>%
+  dplyr::ungroup() %>% 
+  dplyr::mutate(gene = toupper(gene))
+
+RNAseq2_TrpM_vs_KD <- 
+  dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq2_TrpM_D6_vs_KD_D6), exp = 'D6', timePoint = 'D6'),
+                   dplyr::mutate(data.frame(RNAseq2_TrpM_D9_vs_KD_D9), exp = 'D9', timePoint = 'D9')) %>%
   dplyr::mutate(exp = factor(exp, levels = c('D6', 'D9'))) %>%
   dplyr::filter(abs(log2FoldChange) <= 15) %>%
   tidyr::replace_na(list(padj = 1)) %>%
@@ -429,18 +439,14 @@ mapping$entrezgene <- mapping$entrezgene_id
 
 # The mapping object is saved in 'data/bioMartMapping.RData' in case biomart goes off-line.
 
-RNAseq1_WT_vs_KD      <- addAndExtendSTRINGids(RNAseq1_WT_vs_KD)
-RNAseq1_WT_vs_d6_KD   <- addAndExtendSTRINGids(RNAseq1_WT_vs_d6_KD)
-RNAseq1_WT_vs_d12_KD  <- addAndExtendSTRINGids(RNAseq1_WT_vs_d12_KD)
-RNAseq2_WT_TrpM_vs_KD <- addAndExtendSTRINGids(RNAseq2_WT_TrpM_vs_KD)
-
-
-
-# NA D6 v KD D6
-# NA D9 v KD D9
-# NA D12 v KD D12
-# NA D12 v KD D33
-# NA D12 v KD D63
+RNAseq1_WT_vs_KD       <- addAndExtendSTRINGids(RNAseq1_WT_vs_KD)
+RNAseq1_WT_vs_d6_KD    <- addAndExtendSTRINGids(RNAseq1_WT_vs_d6_KD)
+RNAseq1_WT_vs_d12_KD   <- addAndExtendSTRINGids(RNAseq1_WT_vs_d12_KD)
+RNAseq1_Y664F_vs_KD    <- addAndExtendSTRINGids(RNAseq1_Y664F_vs_KD)
+RNAseq1_Y664F_vs_WT    <- addAndExtendSTRINGids(RNAseq1_Y664F_vs_WT)
+RNAseq2_TrpM_vs_WT     <- addAndExtendSTRINGids(RNAseq2_TrpM_vs_WT)
+RNAseq2_WT_TrpM_vs_KD  <- addAndExtendSTRINGids(RNAseq2_WT_TrpM_vs_KD)
+RNAseq2_TrpM_vs_KD     <- addAndExtendSTRINGids(RNAseq2_TrpM_vs_KD)
 
 
 # GSEA
@@ -470,38 +476,96 @@ fgseaEnrichmentPlotFormat <- function(x, title){
     ggtitle(title)
 }
 
+# JKE
 
-invisible(lapply(c("D6", "D9", "D12", "D33", "D63"), function(tp){
-  o <- subset(RNAseq1_WT_vs_KD, timePoint == tp)
-  # ranks <- o$log2FoldChange
-  ranks <- o$stat
-  names(ranks) <- o$entrezgene
-  ranks <- ranks[! is.na(names(ranks))]
 
-  p <- ggplot(data.frame(y = sort(ranks, decreasing = TRUE), x = 1:length(ranks)), aes(x, y)) + 
-    theme_bw() +
-    geom_bar(stat = "identity", width=1.05, fill="black") +
-    scale_x_continuous(label=scales::comma) +
-    theme(axis.text=element_text(size=12),  axis.title = element_text(size=14), plot.title = element_text(size = 16), plot.margin = unit(c(1,1,1,1), "cm")) +
-    ggtitle(paste0(tp, ' ordered gene list stats')) +
-    labs(x = 'Gene', y = 'Stat')
+
+
+create_GSEA_hallmark_plots <- function(d, hallmark, label){
+  invisible(lapply(unique(d$timePoint), function(tp){
+    o <- subset(d, timePoint == tp)
+    ranks <- o$stat
+    names(ranks) <- o$entrezgene
+    ranks <- ranks[! is.na(names(ranks))]
     
-  ggsave(p, file = paste0('figures_and_tables/GSEA/', tp, '_WTvsKD_ordered_gene_list_histogram.png'))
+    p <- ggplot(data.frame(y = sort(ranks, decreasing = TRUE), x = 1:length(ranks)), aes(x, y)) + 
+      theme_bw() +
+      geom_bar(stat = "identity", width=1.05, fill="black") +
+      scale_x_continuous(label=scales::comma) +
+      theme(axis.text=element_text(size=12),  axis.title = element_text(size=14), plot.title = element_text(size = 16), plot.margin = unit(c(1,1,1,1), "cm")) +
+      ggtitle(paste0(tp, ' ordered gene list stats')) +
+      labs(x = 'Gene', y = 'Stat')
+    
+    ggsave(p, file = paste0('figures_and_tables/GSEA/', label, '_', tp, '_ordered_gene_list_histogram.pdf'))
+    
+    invisible(mapply(function(pathway, proteins){
+      set.seed(46)
+      x <- plotEnrichment(proteins, ranks, gseaParam = 1)
+      pathwayList <- list()
+      pathwayList[[pathway]] <- proteins
+      fgseaRes <- fgsea(pathwayList, ranks, nperm=10000)
+      p <- fgseaEnrichmentPlotFormat(x, pathway)
+      ggsave(p, file = paste0('figures_and_tables/GSEA/', label, '_', tp, '_', paste0(sprintf("%.2f", fgseaRes$NES), '_', pathway, '.pdf')))
+    }, names(hallmark), hallmark))
+  }))
+}
+
+# DIRC1  HGNC: 15760 Entrez Gene: 116093 Ensembl: ENSG00000174325 OMIM: 606423 UniProtKB: Q969H9 
+
+create_GSEA_hallmark_plots(RNAseq1_Y664F_vs_KD, hallmark, 'Y664F_vs_KD')
+create_GSEA_hallmark_plots(RNAseq1_Y664F_vs_WT, hallmark, 'Y664F_vs_WT')
+create_GSEA_hallmark_plots(RNAseq1_WT_vs_KD, hallmark, 'WT_vs_KD')
+create_GSEA_hallmark_plots(RNAseq2_TrpM_vs_WT, hallmark, 'TrpM_vs_WT')
+create_GSEA_hallmark_plots(RNAseq2_TrpM_vs_KD, hallmark, 'TrpM_vs_KD')
+
+
+create_GSEA_heatMap <- function(pattern){
   
-  invisible(mapply(function(pathway, proteins){
-    set.seed(46)
-    x <- plotEnrichment(proteins, ranks, gseaParam = 1)
-    pathwayList <- list()
-    pathwayList[[pathway]] <- proteins
-    fgseaRes <- fgsea(pathwayList, ranks, nperm=10000)
-    p <- fgseaEnrichmentPlotFormat(x, pathway)
-    ggsave(p, file = paste0('figures_and_tables/GSEA/', tp, '_WTvsKD_', paste0(sprintf("%.2f", fgseaRes$NES), '_NES'), '_', pathway, '.png'))
-  }, names(hallmark), hallmark))
+  NES_heatMapData <- bind_rows(lapply(list.files('figures_and_tables/GSEA/', pattern = pattern), function(x){
+    o <- unlist(strsplit(x, '_'))
+    if(o[length(o)] == 'histogram.pdf') return(tibble())
+    tibble(genes = sub('\\.pdf', '', paste0(o[7:length(o)], collapse = ' ')),
+           NES = as.numeric(o[5]),
+           timePoint = o[4],
+           timePointDay = as.numeric(str_extract(timePoint, '\\d+')))
+  }))
+
+  NES_heatMapData$timePoint <- factor(NES_heatMapData$timePoint, levels = gtools::mixedsort(unique(NES_heatMapData$timePoint)))
+  
+  o <- arrange(bind_rows(lapply(split(NES_heatMapData, NES_heatMapData$genes), function(x){
+       tibble(genes = x$genes[1], diff = subset(x, timePointDay == min(x$timePointDay))$NES - subset(x, timePointDay == max(x$timePointDay))$NES)
+      })), diff)
+
+  NES_heatMapData$genes <- factor(NES_heatMapData$genes, levels = o$genes)
+
+  scaleLimit <- ceiling(max(abs(NES_heatMapData$NES)))
+  midScaleMark <- 0
+
+  make_square(ggplot(NES_heatMapData, aes(x = timePoint, y = genes, fill = NES)) + 
+    geom_tile() +
+    scale_y_discrete(expand=c(0,0)) +
+    scale_x_discrete(expand=c(0,0)) +
+    scale_fill_gradient2(name = 'Fold change', low="navy", mid="white", high="red", midpoint=0, 
+                         limits=c(-scaleLimit, scaleLimit), breaks = c(-scaleLimit, -midScaleMark, 0, midScaleMark, scaleLimit)) + 
+    labs(x='', y = '') +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+          panel.border = element_blank(), 
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(), 
+          axis.line = element_line(colour = "black"),
+          legend.position="bottom") +
+    guides(fill=guide_colorbar(title.position = "top", barwidth=5)), fudge = 0.75) 
+}
+
+report$GSEA_NES_heatmap_Y664F_vs_KD <- create_GSEA_heatMap('Y664F_vs_KD')
+report$GSEA_NES_heatmap_Y664F_vs_WT <- create_GSEA_heatMap('Y664F_vs_WT')
+report$GSEA_NES_heatmap_WT_vs_KD    <- create_GSEA_heatMap('WT_vs_KD')
+report$GSEA_NES_heatmap_TrpM_vs_WT  <- create_GSEA_heatMap('TrpM_vs_WT')
+report$GSEA_NES_heatmap_TrpM_vs_KD  <- create_GSEA_heatMap('TrpM_vs_KD')
+
+invisible(sapply(names(report)[grep('GSEA_NES_heatmap', names(report))], function(x){
+  ggsave(report[[x]], file = paste0('figures_and_tables/', x, '.pdf'))
 }))
-
-
-
-
 
 
 # KEGG pathway enrichments
