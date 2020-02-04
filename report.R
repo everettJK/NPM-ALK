@@ -333,13 +333,30 @@ report$Thymocyte_Pre_TCR <- createGeneListHeatMap(subset(RNAseq1_WT_vs_KD, timeP
 report$Thymocyte_DP_TCRa_b <- createGeneListHeatMap(subset(RNAseq1_WT_vs_KD, timePoint == 'D63'), Thymocyte_DP_TCRa_b, 9, 'figures_and_tables/RNAseq1_WT_vs_KD_D63_Thymocyte_DP_TCRa_b.pdf')
 
 # Create heat maps for gene of interest sets where select sets share common scales.
-report$ALK_ALCL_heatmap_a    <- createGeneListHeatMap(RNAseq1_WT_vs_KD, ALK_ALCL_a,    9,  'figures_and_tables/RNAseq1_WT_vs_KD_ALK_ALCL_heatmap_a.pdf')
-report$ALK_ALCL_heatmap_b    <- createGeneListHeatMap(RNAseq1_WT_vs_KD, ALK_ALCL_b,    9,  'figures_and_tables/RNAseq1_WT_vs_KD_ALK_ALCL_heatmap_b.pdf')
-report$Tcell_TFs_heatmap     <- createGeneListHeatMap(RNAseq1_WT_vs_KD, Tcell_TFs,     11, 'figures_and_tables/RNAseq1_WT_vs_KD_Tcell_TFs_heatmap.pdf')
-report$Tcell_sig_heatmap     <- createGeneListHeatMap(RNAseq1_WT_vs_KD, Tcell_sig,     11, 'figures_and_tables/RNAseq1_WT_vs_KD_Tcell_sig_heatmap.pdf')
-report$Tcell_recp_heatmap    <- createGeneListHeatMap(RNAseq1_WT_vs_KD, Tcell_recp,    11, 'figures_and_tables/RNAseq1_WT_vs_KD_Tcell_recp_heatmap.pdf')
-report$NonTcell_spec_heatmap <- createGeneListHeatMap(RNAseq1_WT_vs_KD, NonTcell_spec, 11, 'figures_and_tables/RNAseq1_WT_vs_KD_NonTcell_spec_heatmap.pdf')
-report$EmbStemSpec_heatmap   <- createGeneListHeatMap(RNAseq1_WT_vs_KD, EmbStemSpec,   11, 'figures_and_tables/RNAseq1_WT_vs_KD_EmbStemSpec_heatmap.pdf')
+
+o <- subset(RNAseq1_WT_vs_KD, gene %in% c(ALK_ALCL_a, ALK_ALCL_b, Tcell_TFs, Tcell_sig, Tcell_recp, NonTcell_spec,EmbStemSpec))
+scaleMax <- ceiling(max(abs(o$log2FoldChange)))
+
+report$ALK_ALCL_heatmap_a    <- createGeneListHeatMap(RNAseq1_WT_vs_KD, ALK_ALCL_a,    scaleMax, 'figures_and_tables/RNAseq1_WT_vs_KD_ALK_ALCL_heatmap_a.pdf')
+report$ALK_ALCL_heatmap_b    <- createGeneListHeatMap(RNAseq1_WT_vs_KD, ALK_ALCL_b,    scaleMax, 'figures_and_tables/RNAseq1_WT_vs_KD_ALK_ALCL_heatmap_b.pdf')
+report$Tcell_TFs_heatmap     <- createGeneListHeatMap(RNAseq1_WT_vs_KD, Tcell_TFs,     scaleMax, 'figures_and_tables/RNAseq1_WT_vs_KD_Tcell_TFs_heatmap.pdf')
+report$Tcell_sig_heatmap     <- createGeneListHeatMap(RNAseq1_WT_vs_KD, Tcell_sig,     scaleMax, 'figures_and_tables/RNAseq1_WT_vs_KD_Tcell_sig_heatmap.pdf')
+report$Tcell_recp_heatmap    <- createGeneListHeatMap(RNAseq1_WT_vs_KD, Tcell_recp,    scaleMax, 'figures_and_tables/RNAseq1_WT_vs_KD_Tcell_recp_heatmap.pdf')
+report$NonTcell_spec_heatmap <- createGeneListHeatMap(RNAseq1_WT_vs_KD, NonTcell_spec, scaleMax, 'figures_and_tables/RNAseq1_WT_vs_KD_NonTcell_spec_heatmap.pdf')
+report$EmbStemSpec_heatmap   <- createGeneListHeatMap(RNAseq1_WT_vs_KD, EmbStemSpec,   scaleMax, 'figures_and_tables/RNAseq1_WT_vs_KD_EmbStemSpec_heatmap.pdf')
+
+o <- subset(RNAseq2_TrpM_vs_WT, gene %in% c(ALK_ALCL_a, ALK_ALCL_b, Tcell_TFs, Tcell_sig, Tcell_recp, NonTcell_spec,EmbStemSpec))
+scaleMax <- ceiling(max(abs(o$log2FoldChange)))
+report$TrpM_vs_WT_ALK_ALCL_heatmap_a    <- createGeneListHeatMap(RNAseq2_TrpM_vs_WT, ALK_ALCL_a,    scaleMax, 'figures_and_tables/RNAseq2_TrpM_vs_WT_ALK_ALCL_heatmap_a.pdf')
+report$TrpM_vs_WT_ALK_ALCL_heatmap_b    <- createGeneListHeatMap(RNAseq2_TrpM_vs_WT, ALK_ALCL_b,    scaleMax, 'figures_and_tables/RNAseq2_TrpM_vs_WT_ALK_ALCL_heatmap_b.pdf')
+report$TrpM_vs_WT_Tcell_TFs_heatmap     <- createGeneListHeatMap(RNAseq2_TrpM_vs_WT, Tcell_TFs,     scaleMax, 'figures_and_tables/RNAseq2_TrpM_vs_WT_Tcell_TFs_heatmap.pdf')
+report$TrpM_vs_WT_Tcell_sig_heatmap     <- createGeneListHeatMap(RNAseq2_TrpM_vs_WT, Tcell_sig,     scaleMax, 'figures_and_tables/RNAseq2_TrpM_vs_WT_Tcell_sig_heatmap.pdf')
+report$TrpM_vs_WT_Tcell_recp_heatmap    <- createGeneListHeatMap(RNAseq2_WT_vs_KD, Tcell_recp,      scaleMax, 'figures_and_tables/RNAseq2_TrpM_vs_WT_Tcell_recp_heatmap.pdf')
+report$TrpM_vs_WT_NonTcell_spec_heatmap <- createGeneListHeatMap(RNAseq2_TrpM_vs_WT, NonTcell_spec, scaleMax, 'figures_and_tables/RNAseq2_TrpM_vs_WT_NonTcell_spec_heatmap.pdf')
+report$TrpM_vs_WT_EmbStemSpec_heatmap   <- createGeneListHeatMap(RNAseq2_TrpM_vs_WT, EmbStemSpec,   scaleMax, 'figures_and_tables/RNAseq2_TrpM_vs_WT_EmbStemSpec_heatmap.pdf')
+
+
+
 
 
 #------------------
