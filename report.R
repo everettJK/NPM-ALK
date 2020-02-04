@@ -70,15 +70,21 @@ salmon1.pca.plotData$subject  <- do.call(rbind, strsplit(salmon1.pca.plotData$s,
 salmon1.pca.plotData$subject  <- gsub('don', '', salmon1.pca.plotData$subject)
 salmon1.pca.plotData          <- salmon1.pca.plotData[mixedorder(as.character(salmon1.pca.plotData$day)),]
 salmon1.pca.plotData$day      <- factor(salmon1.pca.plotData$day, levels = unique(salmon1.pca.plotData$day))
-salmon1.pca.plotData$genotype <- factor(salmon1.pca.plotData$genotype, levels = c('none', 'KD', 'WT', 'Y664F'))
 salmon1.pca.plotData$time     <- as.integer(str_extract(salmon1.pca.plotData$day, '\\d+'))
 
+salmon1.pca.plotData$genotype2 <- as.character(salmon1.pca.plotData$genotype)
+salmon1.pca.plotData$genotype2 <- gsub('KD', 'NA-KD', salmon1.pca.plotData$genotype2)
+salmon1.pca.plotData$genotype2 <- gsub('WT', 'NA-WT', salmon1.pca.plotData$genotype2)
+salmon1.pca.plotData$genotype2 <- gsub('Y664F', 'NA-Y664F', salmon1.pca.plotData$genotype2)
+salmon1.pca.plotData$genotype2 <- gsub('none', 'UNTRD', salmon1.pca.plotData$genotype2)
+salmon1.pca.plotData$genotype2 <- factor(salmon1.pca.plotData$genotype2, levels = c('UNTRD', 'NA-WT', 'NA-Y664F', 'NA-KD', 'NA-TrpM'))
+
 report$salmon1.pca.plot1 <- 
-  make_square(ggplot(salmon1.pca.plotData, aes(x=x, y=y, fill = time, shape = genotype, label = subject)) +
+  make_square(ggplot(salmon1.pca.plotData, aes(x=x, y=y, color = genotype2, shape = day)) +
   theme_bw() +
-  geom_point(size = 4, stroke = 0.5, color = 'black') +
-  scale_shape_manual(name = 'Genotype', values = 21:25) +
-  scale_fill_gradient(name = 'Time (days)', low = "white", high = "black") +
+  geom_point(size = 4, stroke = 0.5) +
+  scale_color_manual(name = 'Genotype', values = c('black', 'blue', 'green3', 'red', 'purple')) +
+  scale_shape_manual(name = 'Time point', values = 21:25) +
   labs(x = paste0('PC1 (', sprintf("%.2f", summary(salmon1.pca)$importance[3,][1] * 100), '%)'),
        y = paste0('PC2 (', sprintf("%.2f", (summary(salmon1.pca)$importance[3,][2] - summary(salmon1.pca)$importance[3,][1])  * 100), '%)')) +
   theme(panel.border = element_blank(), panel.grid.major = element_blank(),
@@ -99,19 +105,25 @@ salmon1.pca.plotData2$subject  <- do.call(rbind, strsplit(salmon1.pca.plotData2$
 salmon1.pca.plotData2$subject  <- gsub('don', '', salmon1.pca.plotData2$subject)
 salmon1.pca.plotData2          <- salmon1.pca.plotData2[mixedorder(as.character(salmon1.pca.plotData2$day)),]
 salmon1.pca.plotData2$day      <- factor(salmon1.pca.plotData2$day, levels = unique(salmon1.pca.plotData2$day))
-salmon1.pca.plotData2$genotype <- factor(salmon1.pca.plotData2$genotype, levels = c('none', 'KD', 'WT'))
 salmon1.pca.plotData2$time     <- as.integer(str_extract(salmon1.pca.plotData2$day, '\\d+'))
 
+salmon1.pca.plotData2$genotype2 <- as.character(salmon1.pca.plotData2$genotype)
+salmon1.pca.plotData2$genotype2 <- gsub('KD', 'NA-KD', salmon1.pca.plotData2$genotype2)
+salmon1.pca.plotData2$genotype2 <- gsub('WT', 'NA-WT', salmon1.pca.plotData2$genotype2)
+salmon1.pca.plotData2$genotype2 <- gsub('Y664F', 'NA-Y664F', salmon1.pca.plotData2$genotype2)
+salmon1.pca.plotData2$genotype2 <- gsub('none', 'UNTRD', salmon1.pca.plotData2$genotype2)
+salmon1.pca.plotData2$genotype2 <- factor(salmon1.pca.plotData2$genotype2, levels = c('UNTRD', 'NA-WT', 'NA-Y664F', 'NA-KD', 'NA-TrpM'))
+
 report$salmon1.pca.plot2 <- 
-  make_square(ggplot(salmon1.pca.plotData2, aes(x=x, y=y, fill = time, shape = genotype, label = subject)) +
-              theme_bw() +
-              geom_point(size = 4, stroke = 0.5, color = 'black') +
-              scale_shape_manual(name = 'Genotype', values = 21:25) +
-              scale_fill_gradient(name = 'Time (days)', low = "white", high = "black") +
-              labs(x = paste0('PC1 (', sprintf("%.2f", summary(salmon1.pca)$importance[3,][1] * 100), '%)'),
-                   y = paste0('PC2 (', sprintf("%.2f", (summary(salmon1.pca)$importance[3,][2] - summary(salmon1.pca)$importance[3,][1])  * 100), '%)')) +
-              theme(panel.border = element_blank(), panel.grid.major = element_blank(),
-                    panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")))
+  make_square(ggplot(salmon1.pca.plotData2, aes(x=x, y=y, color = genotype2, shape = day)) +
+                theme_bw() +
+                geom_point(size = 4, stroke = 0.5) +
+                scale_color_manual(name = 'Genotype', values = c('black', 'blue', 'red')) +
+                scale_shape_manual(name = 'Time point', values = 21:25) +
+                labs(x = paste0('PC1 (', sprintf("%.2f", summary(salmon1.pca)$importance[3,][1] * 100), '%)'),
+                     y = paste0('PC2 (', sprintf("%.2f", (summary(salmon1.pca)$importance[3,][2] - summary(salmon1.pca)$importance[3,][1])  * 100), '%)')) +
+                theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+                      panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")))
 
 ggsave(report$salmon1.pca.plot2, file = 'figures_and_tables/RNAseq1_no_Y664F.pdf')
 
@@ -140,20 +152,27 @@ salmon2.pca.plotData$subject  <- do.call(rbind, strsplit(salmon2.pca.plotData$s,
 salmon2.pca.plotData$subject  <- gsub('don', '', salmon2.pca.plotData$subject)
 salmon2.pca.plotData          <- salmon2.pca.plotData[mixedorder(as.character(salmon2.pca.plotData$day)),]
 salmon2.pca.plotData$day      <- factor(salmon2.pca.plotData$day, levels = unique(salmon2.pca.plotData$day))
-salmon2.pca.plotData$genotype <- factor(salmon2.pca.plotData$genotype, levels = c('WT', 'KD', 'TrpM'))
+
+salmon2.pca.plotData$genotype2 <- as.character(salmon2.pca.plotData$genotype)
+salmon2.pca.plotData$genotype2 <- gsub('KD', 'NA-KD', salmon2.pca.plotData$genotype2)
+salmon2.pca.plotData$genotype2 <- gsub('WT', 'NA-WT', salmon2.pca.plotData$genotype2)
+salmon2.pca.plotData$genotype2 <- gsub('TrpM', 'NA-TrpM', salmon2.pca.plotData$genotype2)
+salmon2.pca.plotData$genotype2 <- factor(salmon2.pca.plotData$genotype2, levels = c('NA-KD', 'NA-WT', 'NA-TrpM'))
+
+
+# (WT = blue, KD = red, Y664 = green, TrpM = orange).
 
 report$salmon2.pca.plot <- 
-  ggplot(salmon2.pca.plotData, aes(x=x, y=y, fill = genotype, shape = day, label = subject)) +
-  theme_bw() +
-  geom_point(size = 4, stroke = 0.75, color = 'black') +
-  # geom_text(size = 5, nudge_x = 3, nudge_y = 3, show.legend = FALSE) +
-  scale_shape_manual(name = 'Time point', values = 21:22) +
-  scale_fill_manual(name = 'Transgene', values=c('blue', 'red', 'gray50')) +
-  labs(x = paste0('PC1 (', sprintf("%.2f", summary(salmon1.pca)$importance[3,][1] * 100), '%)'),
-       y = paste0('PC2 (', sprintf("%.2f", (summary(salmon1.pca)$importance[3,][2] - summary(salmon1.pca)$importance[3,][1])  * 100), '%)')) +
-  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
-  guides(fill = guide_legend(override.aes=list(shape=21)))
+  make_square(ggplot(salmon2.pca.plotData, aes(x=x, y=y, color = genotype2, shape = day)) +
+                theme_bw() +
+                geom_point(size = 4, stroke = 0.5) +
+                scale_color_manual(name = 'Genotype', values = c('black', 'blue', 'orange')) +
+                scale_shape_manual(name = 'Time point', values = 21:25) +
+                labs(x = paste0('PC1 (', sprintf("%.2f", summary(salmon1.pca)$importance[3,][1] * 100), '%)'),
+                     y = paste0('PC2 (', sprintf("%.2f", (summary(salmon1.pca)$importance[3,][2] - summary(salmon1.pca)$importance[3,][1])  * 100), '%)')) +
+                theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+                      panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")))
+
 
 ggsave(report$salmon2.pca.plot, file = 'figures_and_tables/RNAseq2.pdf')
 
@@ -352,6 +371,9 @@ report$D9_WT_Y664F_TrpM_vs_KD_Tcell_TFs_heatmap  <- createGeneListHeatMap(o, Tce
 report$D9_WT_Y664F_TrpM_vs_KD_Tcell_recp_heatmap <- createGeneListHeatMap(o, Tcell_recp, ceiling(max(abs(o$log2FoldChange))), 'figures_and_tables/D9_WT_Y664F_TrpM_vs_KD_Tcell_recp_heatmap.pdf')
 report$D9_WT_Y664F_TrpM_vs_KD_upInWNT_heatmap    <- createGeneListHeatMap(o, upInWnt, ceiling(max(abs(o$log2FoldChange))),    'figures_and_tables/D9_WT_Y664F_TrpM_vs_KD_upInWNT_heatmap.pdf')
 
+
+# JKE
+# RNAseq2_TrpM_D9_vs_WT_D9
 
 
 # RNAseq2  WT / TrpM vs KD
@@ -625,6 +647,16 @@ report$intSites <- intSites; rm(intSites)
 report$intSites$genotype <- ifelse(grepl('Y664F', report$intSites$patient), 'Y664F', 'WT')
 
 
+# Export data for longitudinal plots
+data.frame(subset(report$intSites, report$intSites$patient %in% c('pNA92', 'pNA93', 'pNA85', 'pNA92_Y664F', 'pNA93_Y664F', 'pNA85_Y664F'))) %>%
+dplyr::group_by(patient, timePointDays) %>%
+dplyr::summarise(clones = n_distinct(posid)) %>%
+dplyr::ungroup() %>%
+dplyr::mutate(genome = ifelse(grepl('Y664F', patient), 'Y664F', 'WT')) %>%
+write.table(sep = ',', col.names = TRUE, row.names = FALSE, quote = FALSE, file = 'figures_and_tables/intSite_longitudinal_data.csv')
+
+
+
 # Create a list of relative abundance plots for each subject.
 
 report$sampleAbundancePlotsData_n <- 50
@@ -672,6 +704,21 @@ write.table(bind_rows(report$sampleAbundancePlotsData) %>%
             file = file.path('figures_and_tables', 'intSites_relativeAbund_plotData.csv'), sep = ',', col.names = TRUE, row.names = FALSE)
 
 
+longitudinalIntSiteSubjects <-
+  arrangeGrob(grobs=list(report$sampleAbundancePlots[['pNA85']],
+                          report$sampleAbundancePlots[['pNA92']],
+                          report$sampleAbundancePlots[['pNA93']]), ncol=3,  padding = unit(0.1, "line")) 
+
+ggsave(longitudinalIntSiteSubjects,  file = file.path('figures_and_tables', 'longitudinalIntSiteSubjects.pdf'))
+
+
+o <- report$sampleAbundancePlots[names(report$sampleAbundancePlots)[! grepl('Y664F', names(report$sampleAbundancePlots))]]
+singleTimePointIntSiteSubjects <-
+  arrangeGrob(grobs=o[! names(o) %in% c('pNA85', 'pNA92', 'pNA93')], ncol=5,  padding = unit(0.1, "line")) 
+
+ggsave(singleTimePointIntSiteSubjects,  file = file.path('figures_and_tables', 'singleTimePointIntSiteSubjects.pdf'), units = 'in', height = 10)
+
+
 # Create list of patients with multiple time points.
 report$subjectsWithMultTimePoints <- 
   dplyr::group_by(data.frame(report$intSites), patient) %>% 
@@ -691,6 +738,9 @@ i <- which(is.na(d$STRING_id));  message(paste0('gene ids not mapped to STRINGdb
 report$intSites$STRING_id <- d$STRING_id
 
 
+preVsPostGenesToLabel <- c('ARID1A', 'AHR', 'DIAPH2', 'SMARCE1', 'ACTR3', 'ADK', 'CBLB', 'CCNL2', 'CUL3',
+                           'GNB1', 'HNRNPC', 'KNTC1', 'MAP3K7',  'NSD1', 'PACS1', 'PIBF1', 'PRR12', 'RC3H2',
+                           'VPS13D', 'VTI1A', 'YTHDF3')
 
 # Create an integration frequency bivariate plot for WT subjects.
 report$preVspostFreqplot.WT <- preVsPostFreqPlot(subset(report$intSites, patient %in% c('pNA92', 'pNA93', 'pNA85')),
@@ -698,10 +748,12 @@ report$preVspostFreqplot.WT <- preVsPostFreqPlot(subset(report$intSites, patient
                                                  distCutOff = 50000,
                                                  readRDS('data/humanOncoGenesList.rds'), 
                                                  nGenesToLabel = 5,
-                                                 mustLabel = c('ARID1A'))
+                                                 dataPointSize = 2,
+                                                 mustLabel = preVsPostGenesToLabel)
 
 
-ggsave(report$preVspostFreqplot.WT, file = 'figures_and_tables/preVspostFreqplot.WT.pdf')
+ggsave(report$preVspostFreqplot.WT[[1]], file = 'figures_and_tables/preVspostFreqplot.WT.StrechedWithLabels.pdf')
+ggsave(report$preVspostFreqplot.WT[[2]], file = 'figures_and_tables/preVspostFreqplot.WT.pdf')
 
 
 # Create an integration frequency bivariate plot for Y664F subjects.
@@ -709,10 +761,11 @@ report$preVspostFreqplot.Y664F <- preVsPostFreqPlot(subset(report$intSites, pati
                                                     14, 
                                                     readRDS('data/humanOncoGenesList.rds'), 
                                                     nGenesToLabel = 5,
-                                                    mustLabel = c('ARID1A'))
+                                                    dataPointSize = 2,
+                                                    mustLabel = preVsPostGenesToLabel)
 
-
-ggsave(report$preVspostFreqplot.Y664F, file = 'figures_and_tables/preVspostFreqplot.Y664F.pdf')
+ggsave(report$preVspostFreqplot.Y664F[[1]], file = 'figures_and_tables/preVspostFreqplot.Y664F.stretchedWithLables.pdf')
+ggsave(report$preVspostFreqplot.Y664F[[2]], file = 'figures_and_tables/preVspostFreqplot.Y664F.pdf')
 
 
 # Create UCSD tracks.

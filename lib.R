@@ -322,8 +322,10 @@ createUCSCintSiteAbundTrack <- function(posid, abund, subject, title='intSites',
 
 
 
-preVsPostFreqPlot <- function(sites, daysCutOff, oncoGenes, nGenesToLabel = 5, distCutOff = 10000, mustLabel = c('xxxxxx')){
+preVsPostFreqPlot <- function(sites, daysCutOff, oncoGenes, nGenesToLabel = 5, distCutOff = 10000, dataPointSize = 2, mustLabel = NA){
+  
   d <- data.frame(sites) %>%
+       dplyr::select(nearestFeature, nearestFeatureDist, posid, timePointDays) %>%
        dplyr::filter(abs(nearestFeatureDist) <= distCutOff) %>%
        dplyr::mutate(preTransplantSites = n_distinct(posid[timePointDays <= daysCutOff])) %>%
        dplyr::mutate(postTransplantSites = n_distinct(posid[timePointDays > daysCutOff])) %>%
@@ -336,27 +338,61 @@ preVsPostFreqPlot <- function(sites, daysCutOff, oncoGenes, nGenesToLabel = 5, d
        dplyr::mutate(genesPerPos = n_distinct(nearestFeature)) %>%
        dplyr::ungroup() %>%
        dplyr::mutate(prePostDiff = postTransplant - preTransplant) %>%
-       dplyr::mutate(oncoGene = factor(ifelse(toupper(nearestFeature) %in% toupper(oncoGenes), 'Yes', 'No'))) %>%
-       dplyr::arrange(prePostDiff)
-
-  genesToLabel <- unlist(d[c(1:nGenesToLabel,(nrow(d)-(nGenesToLabel-1)):nrow(d)),c('nearestFeature')])
-  genesToLabel <- c(mustLabel, genesToLabel)
-  d$geneLabel  <- ifelse(d$nearestFeature %in% genesToLabel, d$nearestFeature, '')
+       dplyr::mutate(oncoGene = factor(ifelse(toupper(nearestFeature) %in% toupper(oncoGenes), 'Yes', 'No'))) 
   
-  ggplot(d, aes(preTransplant, postTransplant, color = log10(genesPerPos), shape = oncoGene)) +
+  d <- dplyr::bind_rows(lapply(split(d, paste(d$preTransplant, d$postTransplant)), function(x){
+         g <- mustLabel %in% x$nearestFeature
+         if(any(g)){
+           return(x[which(x$nearestFeature %in% mustLabel),])
+         }else{
+           return(x[1,])
+         }
+       })) %>%
+    dplyr::arrange(prePostDiff)
+
+  
+  if(any(is.na(mustLabel))){
+    genesToLabel <- unlist(d[c(1:nGenesToLabel,(nrow(d)-(nGenesToLabel-1)):nrow(d)),c('nearestFeature')])
+  } else {
+   genesToLabel <- mustLabel
+  }
+  
+  d$geneLabel  <- ifelse(d$nearestFeature %in% genesToLabel, d$nearestFeature, '')
+  p1 <- ggplot(subset(d, nearestFeature %in% mustLabel), aes(preTransplant, postTransplant, fill = log10(genesPerPos), shape = oncoGene)) +
     theme_bw() +
-    xlim(c(0, max(c(d$preTransplant, d$postTransplant)))) +
-    ylim(c(0, max(c(d$preTransplant, d$postTransplant)))) +
-    scale_shape_manual(name = 'Oncogene', values = c(16, 15)) +
-    scale_color_gradientn(name = 'log10(Data density)', colors = c("green3", "gold2", "red")) +
-    geom_point(alpha = 0.4, size = 4, stroke = 0) +
-    #geom_jitter(width = 0.0001, height = 0.0001) +
-    geom_abline(slope=1, intercept=0, color='blue', size=0.5) +
+    xlim(c(-max(c(d$preTransplant, d$postTransplant)), max(c(d$preTransplant, d$postTransplant)))) +
+    #ylim(c(-max(c(d$preTransplant, d$postTransplant)), max(c(d$preTransplant, d$postTransplant)))) +
+    scale_shape_manual(name = 'Oncogene', values = c(21,22)) +
+    scale_fill_gradientn(name = 'log10(Data density)', colors = c("green3", "gold2", "red")) +
+    geom_point(alpha = 1, size = dataPointSize) +
+    geom_abline(slope=1, intercept=0, color='black', size=0.5) +
     guides(shape = guide_legend(override.aes = list(stroke = 2))) +
-    geom_text_repel(aes(label=geneLabel), color='black', size=2.5,  direction='y',box.padding=1.0, point.padding=1.25) +
-    theme(legend.position="bottom", panel.grid.minor = element_blank(),panel.background = element_blank()) +
+    geom_text_repel(aes(label=geneLabel), color='black', size=2.5,  direction='both') + # ,box.padding=1.0, point.padding=1.25) +
+    theme(legend.position="bottom", text = element_text(size=12),
+          panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+          panel.background = element_blank(), axis.line = element_line(colour = "black")) +
     guides(shape = guide_legend(title.position = "top")) +
-    guides(color=FALSE) +
+    guides(fill=FALSE) +
     labs(x = paste0('Earlier time points (<= ', daysCutOff, ' days, ', ppNum(n_distinct(subset(sites, timePointDays <= daysCutOff)$posid)), ' sites)'),
          y = paste0('Later time points (> ', daysCutOff, ' days, ', ppNum(n_distinct(subset(sites, timePointDays > daysCutOff)$posid)), ' sites)'))
-}
+
+  p2 <- ggplot(d, aes(preTransplant, postTransplant, fill = log10(genesPerPos), shape = oncoGene)) +
+    theme_bw() +scale_shape_manual(name = 'Oncogene', values = c(21,22)) +
+    scale_fill_gradientn(name = 'log10(Data density)', colors = c("green3", "gold2", "red")) +
+    xlim(c(0, max(c(d$preTransplant, d$postTransplant)))) +
+    ylim(c(0, max(c(d$preTransplant, d$postTransplant)))) +
+    geom_point(alpha = 1, size = dataPointSize) +
+    geom_abline(slope=1, intercept=0, color='black', size=0.5) +
+    guides(shape = guide_legend(override.aes = list(stroke = 2))) +
+    scale_x_continuous(labels = scales::percent_format(accuracy = 0.01)) +
+    scale_y_continuous(labels = scales::percent_format(accuracy = 0.01)) +
+    theme(legend.position="bottom", text = element_text(size=12),
+          panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+          panel.background = element_blank(), axis.line = element_line(colour = "black")) +
+    guides(shape = guide_legend(title.position = "top")) +
+    guides(fill=FALSE) +
+    labs(x = paste0('Earlier time points (<= ', daysCutOff, ' days, ', ppNum(n_distinct(subset(sites, timePointDays <= daysCutOff)$posid)), ' sites)'),
+         y = paste0('Later time points (> ', daysCutOff, ' days, ', ppNum(n_distinct(subset(sites, timePointDays > daysCutOff)$posid)), ' sites)'))
+  
+  list(p1, p2)
+  }
