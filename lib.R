@@ -357,17 +357,21 @@ preVsPostFreqPlot <- function(sites, daysCutOff, oncoGenes, nGenesToLabel = 5, d
    genesToLabel <- mustLabel
   }
   
+  browser()
+  
   d$geneLabel  <- ifelse(d$nearestFeature %in% genesToLabel, d$nearestFeature, '')
-  p1 <- ggplot(subset(d, nearestFeature %in% mustLabel), aes(preTransplant, postTransplant, fill = log10(genesPerPos), shape = oncoGene)) +
+  
+  d.j <- d
+  #d.j$preTransplant <- jitter(d.j$preTransplant, amount = 0.001)
+  #d.j$postTransplant <- jitter(d.j$postTransplant, amount =  0.001)
+  p0  <-  ggplot(subset(d.j, nearestFeature %in% mustLabel), aes(preTransplant, postTransplant, shape = oncoGene)) +
     theme_bw() +
-    xlim(c(-max(c(d$preTransplant, d$postTransplant)), max(c(d$preTransplant, d$postTransplant)))) +
-    #ylim(c(-max(c(d$preTransplant, d$postTransplant)), max(c(d$preTransplant, d$postTransplant)))) +
-    scale_shape_manual(name = 'Oncogene', values = c(21,22)) +
-    scale_fill_gradientn(name = 'log10(Data density)', colors = c("green3", "gold2", "red")) +
-    geom_point(alpha = 1, size = dataPointSize) +
+    scale_shape_manual(name = 'Oncogene', values = rev(c(15, 19))) +
+    geom_point(alpha = 1, size = 3, color = 'black') +
     geom_abline(slope=1, intercept=0, color='black', size=0.5) +
-    guides(shape = guide_legend(override.aes = list(stroke = 2))) +
-    geom_text_repel(aes(label=geneLabel), color='black', size=2.5,  direction='both') + # ,box.padding=1.0, point.padding=1.25) +
+    scale_x_continuous(labels = scales::percent_format(accuracy = 0.01), limits = c(0, max(c(d$preTransplant, d$postTransplant)))) +
+    scale_y_continuous(labels = scales::percent_format(accuracy = 0.01), limits = c(0, max(c(d$preTransplant, d$postTransplant)))) +
+    geom_text_repel(aes(label=geneLabel), color='black', size=3,  direction='y', box.padding=0.5, point.padding=1.25) +
     theme(legend.position="bottom", text = element_text(size=12),
           panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
           panel.background = element_blank(), axis.line = element_line(colour = "black")) +
@@ -376,6 +380,7 @@ preVsPostFreqPlot <- function(sites, daysCutOff, oncoGenes, nGenesToLabel = 5, d
     labs(x = paste0('Earlier time points (<= ', daysCutOff, ' days, ', ppNum(n_distinct(subset(sites, timePointDays <= daysCutOff)$posid)), ' sites)'),
          y = paste0('Later time points (> ', daysCutOff, ' days, ', ppNum(n_distinct(subset(sites, timePointDays > daysCutOff)$posid)), ' sites)'))
 
+  
   p2 <- ggplot(d, aes(preTransplant, postTransplant, fill = log10(genesPerPos), shape = oncoGene)) +
     theme_bw() +scale_shape_manual(name = 'Oncogene', values = c(21,22)) +
     scale_fill_gradientn(name = 'log10(Data density)', colors = c("green3", "gold2", "red")) +

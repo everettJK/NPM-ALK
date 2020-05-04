@@ -204,6 +204,9 @@ RNAseq2_WT_D9_vs_KD_D9          <- addGeneNamesToContrast(results(salmon2.ddsTxi
 RNAseq2_TrpM_D9_vs_KD_D9        <- addGeneNamesToContrast(results(salmon2.ddsTxi, contrast=c("repGrp","TrpM_D9","KD_D9")))
 RNAseq2_TrpM_D9_vs_WT_D9        <- addGeneNamesToContrast(results(salmon2.ddsTxi, contrast=c("repGrp","TrpM_D9","WT_D9")))
 
+RNAseq2_KD_D6_vs_WT_D6          <- addGeneNamesToContrast(results(salmon2.ddsTxi, contrast=c("repGrp","KD_D6", "WT_D6")))
+RNAseq2_KD_D9_vs_WT_D9          <- addGeneNamesToContrast(results(salmon2.ddsTxi, contrast=c("repGrp","KD_D9", "WT_D9")))
+
 
 # Build contrast tables
 #------------------------------------------------------------------------------------------------00
@@ -295,6 +298,19 @@ RNAseq2_TrpM_vs_WT <-
   dplyr::ungroup() %>% 
   dplyr::mutate(gene = toupper(gene))
 
+
+RNAseq2_WT_vs_KD <- 
+  dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq2_WT_D6_vs_KD_D6), exp = 'D6', timePoint = 'D6'),
+                   dplyr::mutate(data.frame(RNAseq2_WT_D9_vs_KD_D9), exp = 'D9', timePoint = 'D9')) %>%
+  dplyr::mutate(exp = factor(exp, levels = c('D6', 'D9'))) %>%
+  dplyr::filter(abs(log2FoldChange) <= 15) %>%
+  tidyr::replace_na(list(padj = 1)) %>%
+  dplyr::group_by(exp, gene) %>% 
+  dplyr::top_n(-1, wt = padj) %>%
+  dplyr::ungroup() %>% 
+  dplyr::mutate(gene = toupper(gene))
+
+
 RNAseq2_TrpM_vs_KD <- 
   dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq2_TrpM_D6_vs_KD_D6), exp = 'D6', timePoint = 'D6'),
                    dplyr::mutate(data.frame(RNAseq2_TrpM_D9_vs_KD_D9), exp = 'D9', timePoint = 'D9')) %>%
@@ -306,6 +322,30 @@ RNAseq2_TrpM_vs_KD <-
   dplyr::ungroup() %>% 
   dplyr::mutate(gene = toupper(gene))
 
+
+RNAseq2_TrpM_vs_WT <- 
+  dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq2_TrpM_D6_vs_WT_D6), exp = 'D6', timePoint = 'D6'),
+                   dplyr::mutate(data.frame(RNAseq2_TrpM_D9_vs_WT_D9), exp = 'D9', timePoint = 'D9')) %>%
+  dplyr::mutate(exp = factor(exp, levels = c('D6', 'D9'))) %>%
+  dplyr::filter(abs(log2FoldChange) <= 15) %>%
+  tidyr::replace_na(list(padj = 1)) %>%
+  dplyr::group_by(exp, gene) %>% 
+  dplyr::top_n(-1, wt = padj) %>%
+  dplyr::ungroup() %>% 
+  dplyr::mutate(gene = toupper(gene))
+
+
+RNAseq2_KD_vs_WT <-
+  dplyr::bind_rows(dplyr::mutate(data.frame(RNAseq2_KD_D6_vs_WT_D6), exp = 'D6', timePoint = 'D6'),
+                   dplyr::mutate(data.frame(RNAseq2_KD_D9_vs_WT_D9), exp = 'D9', timePoint = 'D9')) %>%
+  dplyr::mutate(exp = factor(exp, levels = c('D6', 'D9'))) %>%
+  dplyr::filter(abs(log2FoldChange) <= 15) %>%
+  tidyr::replace_na(list(padj = 1)) %>%
+  dplyr::group_by(exp, gene) %>% 
+  dplyr::top_n(-1, wt = padj) %>%
+  dplyr::ungroup() %>% 
+  dplyr::mutate(gene = toupper(gene))
+  
 
 
 # Heatmaps
@@ -358,11 +398,6 @@ report$TrpM_vs_WT_EmbStemSpec_heatmap   <- createGeneListHeatMap(RNAseq2_TrpM_vs
 
 
 
-
-#------------------
-RNAseq2_TrpM_vs_WT
-RNAseq1_Y664F_vs_WT
-
 a <- RNAseq2_TrpM_vs_WT[grep('D9', RNAseq2_TrpM_vs_WT$timePoint),]
 b <- subset(RNAseq1_Y664F_vs_WT, timePoint == 'D9')
 a$timePoint <- 'TrpM'
@@ -388,9 +423,6 @@ report$D9_WT_Y664F_TrpM_vs_KD_Tcell_TFs_heatmap  <- createGeneListHeatMap(o, Tce
 report$D9_WT_Y664F_TrpM_vs_KD_Tcell_recp_heatmap <- createGeneListHeatMap(o, Tcell_recp, ceiling(max(abs(o$log2FoldChange))), 'figures_and_tables/D9_WT_Y664F_TrpM_vs_KD_Tcell_recp_heatmap.pdf')
 report$D9_WT_Y664F_TrpM_vs_KD_upInWNT_heatmap    <- createGeneListHeatMap(o, upInWnt, ceiling(max(abs(o$log2FoldChange))),    'figures_and_tables/D9_WT_Y664F_TrpM_vs_KD_upInWNT_heatmap.pdf')
 
-
-# JKE
-# RNAseq2_TrpM_D9_vs_WT_D9
 
 
 # RNAseq2  WT / TrpM vs KD
@@ -486,6 +518,8 @@ RNAseq1_Y664F_vs_WT    <- addAndExtendSTRINGids(RNAseq1_Y664F_vs_WT)
 RNAseq2_TrpM_vs_WT     <- addAndExtendSTRINGids(RNAseq2_TrpM_vs_WT)
 RNAseq2_WT_TrpM_vs_KD  <- addAndExtendSTRINGids(RNAseq2_WT_TrpM_vs_KD)
 RNAseq2_TrpM_vs_KD     <- addAndExtendSTRINGids(RNAseq2_TrpM_vs_KD)
+RNAseq2_WT_vs_KD       <- addAndExtendSTRINGids(RNAseq2_WT_vs_KD)
+RNAseq2_KD_vs_WT       <- addAndExtendSTRINGids(RNAseq2_KD_vs_WT)
 
 
 # GSEA
@@ -515,10 +549,8 @@ fgseaEnrichmentPlotFormat <- function(x, title){
     ggtitle(title)
 }
 
+
 # JKE
-
-
-
 
 create_GSEA_hallmark_plots <- function(d, hallmark, label){
   invisible(lapply(unique(d$timePoint), function(tp){
@@ -549,16 +581,17 @@ create_GSEA_hallmark_plots <- function(d, hallmark, label){
   }))
 }
 
-# DIRC1  HGNC: 15760 Entrez Gene: 116093 Ensembl: ENSG00000174325 OMIM: 606423 UniProtKB: Q969H9 
+# WT_vs_KD found in both first and second RNAseq experiments.
 
-create_GSEA_hallmark_plots(RNAseq1_Y664F_vs_KD, hallmark, 'Y664F_vs_KD')
-create_GSEA_hallmark_plots(RNAseq1_Y664F_vs_WT, hallmark, 'Y664F_vs_WT')
-create_GSEA_hallmark_plots(RNAseq1_WT_vs_KD, hallmark, 'WT_vs_KD')
-create_GSEA_hallmark_plots(RNAseq2_TrpM_vs_WT, hallmark, 'TrpM_vs_WT')
-create_GSEA_hallmark_plots(RNAseq2_TrpM_vs_KD, hallmark, 'TrpM_vs_KD')
+create_GSEA_hallmark_plots(RNAseq1_Y664F_vs_KD, hallmark, 'RNAseq1.Y664F_vs_KD')
+create_GSEA_hallmark_plots(RNAseq1_Y664F_vs_WT, hallmark, 'RNAseq1.Y664F_vs_WT')
+create_GSEA_hallmark_plots(RNAseq1_WT_vs_KD,    hallmark, 'RNAseq1.WT_vs_KD')
+create_GSEA_hallmark_plots(RNAseq2_WT_vs_KD,    hallmark, 'RNAseq2.WT_vs_KD')
+create_GSEA_hallmark_plots(RNAseq2_TrpM_vs_WT,  hallmark, 'RNAseq2.TrpM_vs_WT')
+create_GSEA_hallmark_plots(RNAseq2_TrpM_vs_KD,  hallmark, 'RNAseq2.TrpM_vs_KD')
+create_GSEA_hallmark_plots(RNAseq2_KD_vs_WT,    hallmark, 'RNAseq2.KD_vs_WT')
 
-
-create_GSEA_heatMap <- function(pattern){
+create_GSEA_heatMap <- function(pattern, selectGroups = NULL){
   
   NES_heatMapData <- bind_rows(lapply(list.files('figures_and_tables/GSEA/', pattern = pattern), function(x){
     o <- unlist(strsplit(x, '_'))
@@ -577,14 +610,19 @@ create_GSEA_heatMap <- function(pattern){
 
   NES_heatMapData$genes <- factor(NES_heatMapData$genes, levels = o$genes)
 
+  if(! is.null(selectGroups)){
+    NES_heatMapData <- dplyr::filter(NES_heatMapData, genes %in% selectGroups)
+    NES_heatMapData$genes <- factor(as.character(NES_heatMapData$genes), levels = selectGroups)
+  }
+  
   scaleLimit <- ceiling(max(abs(NES_heatMapData$NES)))
   midScaleMark <- 0
 
-  make_square(ggplot(NES_heatMapData, aes(x = timePoint, y = genes, fill = NES)) + 
+  list( 'plot' =  make_square(ggplot(NES_heatMapData, aes(x = timePoint, y = genes, fill = NES)) + 
     geom_tile() +
     scale_y_discrete(expand=c(0,0)) +
     scale_x_discrete(expand=c(0,0)) +
-    scale_fill_gradient2(name = 'Fold change', low="navy", mid="white", high="red", midpoint=0, 
+    scale_fill_gradient2(name = 'GSEA score', low="navy", mid="white", high="red", midpoint=0, 
                          limits=c(-scaleLimit, scaleLimit), breaks = c(-scaleLimit, -midScaleMark, 0, midScaleMark, scaleLimit)) + 
     labs(x='', y = '') +
     theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
@@ -593,12 +631,68 @@ create_GSEA_heatMap <- function(pattern){
           panel.grid.minor = element_blank(), 
           axis.line = element_line(colour = "black"),
           legend.position="bottom") +
-    guides(fill=guide_colorbar(title.position = "top", barwidth=5)), fudge = 0.75) 
+    guides(fill=guide_colorbar(title.position = "top", barwidth=5)), fudge = 0.75),
+    'plotData' = NES_heatMapData)
 }
+
+
+save.image(file = 'workingImage.RData')
+
+selectGroups <- c('KRAS SIGNALING DN', 'KRAS SIGNALING UP', 'PI3K AKT MTOR SIGNALING', 'MYC TARGETS V1', 'E2F TARGETS',  'FATTY ACID METABOLISM', 'G2M CHECKPOINT')
+
+a <- create_GSEA_heatMap('RNAseq2.WT_vs_KD',   selectGroups = selectGroups)
+b <- create_GSEA_heatMap('RNAseq2.TrpM_vs_KD', selectGroups = selectGroups)
+
+
+selectGSEAplots <- function(x){
+  scaleLimit <- ceiling(max(abs(x$NES)))
+  make_square(ggplot(x, aes(x = timePoint, y = genes, fill = NES)) + 
+                     geom_tile() +
+                     scale_y_discrete(expand=c(0,0)) +
+                     scale_x_discrete(expand=c(0,0)) +
+                     scale_fill_gradient2(name = 'GSEA score', low="navy", mid="white", high="red", midpoint=0, 
+                                          limits=c(-scaleLimit, scaleLimit), breaks = c(-scaleLimit, -0, 0, 0, scaleLimit)) + 
+                     labs(x='', y = '') +
+                     theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+                           panel.border = element_blank(), 
+                           panel.grid.major = element_blank(),
+                           panel.grid.minor = element_blank(), 
+                           axis.line = element_line(colour = "black"),
+                           legend.position="bottom") +
+                     guides(fill=guide_colorbar(title.position = "top", barwidth=5)), fudge = 0.75)
+}
+
+d1 <- subset(a[[2]], timePoint == 'D9');  d1$timePoint <- paste('WT', d1$timePoint);   d1$timePointDay <- NULL
+d2 <- subset(b[[2]], timePoint == 'D9');  d2$timePoint <- paste('TrpM', d2$timePoint); d2$timePointDay <- NULL
+d <- rbind(d1, d2)
+ggsave(selectGSEAplots(d), file = 'figures_and_tables/selectGSEA_WT_and_TrpM_vs_KD_D9.pdf')
+
+
+d1 <- a[[2]];  d1$timePoint <- paste('WT', d1$timePoint);   d1$timePointDay <- NULL
+d2 <- b[[2]];  d2$timePoint <- paste('TrpM', d2$timePoint); d2$timePointDay <- NULL
+d <- rbind(d1, d2)
+d$timePoint <- factor(d$timePoint, levels = c('WT D6', 'TrpM D6', 'WT D9', 'TrpM D9'))
+ggsave(selectGSEAplots(d), file = 'figures_and_tables/selectGSEA_WT_and_TrpM_vs_KD_allTimePoints.pdf')
+
+
+# JKE
+
+a <- create_GSEA_heatMap('RNAseq2.KD_vs_WT', selectGroups = selectGroups)
+b <- create_GSEA_heatMap('RNAseq2.TrpM_vs_WT', selectGroups = selectGroups)
+
+d1 <- a[[2]];  d1$timePoint <- paste('KD', d1$timePoint);   d1$timePointDay <- NULL
+d2 <- b[[2]];  d2$timePoint <- paste('TrpM', d2$timePoint); d2$timePointDay <- NULL
+d <- rbind(d1, d2)
+d$timePoint <- factor(d$timePoint, levels = c('KD D6', 'TrpM D6', 'KD D9', 'TrpM D9'))
+ggsave(selectGSEAplots(d), file = 'figures_and_tables/selectGSEA_KD_and_TrpM_vs_WT_allTimePoints.pdf')
+
+
+
+
 
 report$GSEA_NES_heatmap_Y664F_vs_KD <- create_GSEA_heatMap('Y664F_vs_KD')
 report$GSEA_NES_heatmap_Y664F_vs_WT <- create_GSEA_heatMap('Y664F_vs_WT')
-report$GSEA_NES_heatmap_WT_vs_KD    <- create_GSEA_heatMap('WT_vs_KD')
+report$GSEA_NES_heatmap_WT_vs_KD    <- create_GSEA_heatMap('WT_vs_KD1')
 report$GSEA_NES_heatmap_TrpM_vs_WT  <- create_GSEA_heatMap('TrpM_vs_WT')
 report$GSEA_NES_heatmap_TrpM_vs_KD  <- create_GSEA_heatMap('TrpM_vs_KD')
 
@@ -673,6 +767,45 @@ dplyr::mutate(genome = ifelse(grepl('Y664F', patient), 'Y664F', 'WT')) %>%
 write.table(sep = ',', col.names = TRUE, row.names = FALSE, quote = FALSE, file = 'figures_and_tables/intSite_longitudinal_data.csv')
 
 
+# Test for enrichment of intSites near oncogenes in clones with relative abundances >= 1 % for each culture timepoint
+# where the large majority of cultures contain a single time point.
+d <- dplyr::group_by(data.frame(report$intSites), patient, GTSP) %>%
+     dplyr::mutate(clonesPerSample = sum(estAbund)) %>%
+     dplyr::ungroup() %>%
+     dplyr::filter(clonesPerSample >= 100) %>%
+     dplyr::select(patient, GTSP, timePoint, estAbund, relAbund,  nearestFeature, posid, 
+                            nearestFeatureDist,nearestOncoFeature, nearestOncoFeatureDist) %>%
+     dplyr::group_by(GTSP) %>%
+     dplyr::do(data.frame(culture = .$patient[1], timePoint = .$timePoint[1], nSites = n_distinct(.$posid),
+                          pval = fisher.test(matrix(c(n_distinct(subset(., relAbund < 1  & abs(nearestOncoFeatureDist) >  25000)$posid),
+                                                      n_distinct(subset(., relAbund < 1  & abs(nearestOncoFeatureDist) <= 25000)$posid),
+                                                      n_distinct(subset(., relAbund >= 1 & abs(nearestOncoFeatureDist) >  25000)$posid),
+                                                      n_distinct(subset(., relAbund >= 1 & abs(nearestOncoFeatureDist) <= 25000)$posid)),
+                                                    byrow = TRUE, ncol = 2))$p.value)) %>%
+  dplyr::ungroup() %>%
+  dplyr::select(-GTSP) %>%
+  dplyr::arrange(pval)
+
+write.table(d, sep = ',', col.names = TRUE, row.names = FALSE, quote = FALSE, file = 'figures_and_tables/nearOncoGeneRelAbundEnrichment.txt')
+
+
+# Test for enrichment of intSites near oncogenes in clones with relative abundances >= 1 % with all cultures combined. 
+d <- dplyr::group_by(data.frame(report$intSites), patient, GTSP) %>%
+  dplyr::mutate(clonesPerSample = sum(estAbund)) %>%
+  dplyr::ungroup() %>%
+  dplyr::filter(clonesPerSample >= 100) %>%
+  dplyr::select(patient, GTSP, timePoint, estAbund, relAbund,  nearestFeature, posid, 
+                nearestFeatureDist,nearestOncoFeature, nearestOncoFeatureDist) 
+
+fisher.test(matrix(c(n_distinct(subset(d, relAbund < 1  & abs(nearestOncoFeatureDist) >  25000)$posid),
+                     n_distinct(subset(d, relAbund < 1  & abs(nearestOncoFeatureDist) <= 25000)$posid),
+                     n_distinct(subset(d, relAbund >= 1 & abs(nearestOncoFeatureDist) >  25000)$posid),
+                     n_distinct(subset(d, relAbund >= 1 & abs(nearestOncoFeatureDist) <= 25000)$posid)),
+                   byrow = TRUE, ncol = 2))
+
+
+
+
 
 # Create a list of relative abundance plots for each subject.
 
@@ -734,6 +867,37 @@ singleTimePointIntSiteSubjects <-
   arrangeGrob(grobs=o[! names(o) %in% c('pNA85', 'pNA92', 'pNA93')], ncol=5,  padding = unit(0.1, "line")) 
 
 ggsave(singleTimePointIntSiteSubjects,  file = file.path('figures_and_tables', 'singleTimePointIntSiteSubjects.pdf'), units = 'in', height = 10)
+
+
+abundantCultureGenes <- group_by(data.frame(report$intSites), patient) %>% 
+  mutate(sampleCells = sum(estAbund),
+         genotype = ifelse(grepl('Y664F', patient), 'Y664F', 'WT')) %>%
+  ungroup() %>%
+  filter(sampleCells >= 100, abs(nearestFeatureDist) <= 25000) %>%
+  group_by(patient, genotype, nearestFeature) %>%
+  summarise(maxAbund = max(estAbund), maxRelAbund = max(relAbund)) %>% 
+  ungroup() %>%
+  filter(maxRelAbund >= 1) %>%
+  group_by(nearestFeature) %>%
+  mutate(nPatients = n_distinct(patient)) %>%
+  ungroup() %>%
+  filter(nPatients >= 2) %>%
+  group_by(nearestFeature, nPatients, genotype) %>%
+  summarise(label = paste0(n_distinct(patient), '; ', paste(sprintf("%.1f%%", maxRelAbund), collapse = ','))) %>%
+  ungroup() %>%
+  reshape2::dcast(nearestFeature~genotype)
+
+write.table(abundantCultureGenes, sep = ',', col.names = TRUE, row.names = FALSE, file = 'figures_and_tables/abundantCultureGenes.csv')
+
+preVsPostFreqPlot(subset(report$intSites, patient == 'pNA93'),
+                  14, 
+                  distCutOff = 50000,
+                  readRDS('data/humanOncoGenesList.rds'), 
+                  nGenesToLabel = 5,
+                  dataPointSize = 2,
+                  mustLabel = abundantCultureGenes$nearestFeature)
+
+
 
 
 # Create list of patients with multiple time points.
