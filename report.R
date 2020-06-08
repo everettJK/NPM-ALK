@@ -767,6 +767,48 @@ dplyr::mutate(genome = ifelse(grepl('Y664F', patient), 'Y664F', 'WT')) %>%
 write.table(sep = ',', col.names = TRUE, row.names = FALSE, quote = FALSE, file = 'figures_and_tables/intSite_longitudinal_data.csv')
 
 
+# Abundant clone trajectories
+#--------------------------------------------------------------------------------------------------
+
+# Select samples with 100 or more inferred cells then select clones where relabundance
+# surpassed 1% at any timepoint. 
+d <- data.frame(subset(report$intSites, report$intSites$patient %in% c('pNA92', 'pNA93', 'pNA85', 'pNA92_Y664F', 'pNA93_Y664F', 'pNA85_Y664F'))) %>%
+     dplyr::group_by(patient, GTSP) %>%
+     dplyr::mutate(clonesPerSample = sum(estAbund)) %>%
+     dplyr::ungroup() %>%
+     dplyr::filter(clonesPerSample >= 100) %>% 
+     dplyr::select(patient, timePointDays, estAbund, relAbund, posid, nearestFeature) %>%
+     dplyr::group_by(patient, posid) %>%
+     dplyr::mutate(relAbundTest = any(relAbund >= 1) & n_distinct(timePointDays) >= 2, 
+                   gene = ifelse(any(relAbund >= 10), nearestFeature, 'NA')) %>%
+     dplyr::ungroup() %>%
+     dplyr::filter(relAbundTest == TRUE) %>%
+     dplyr::arrange(desc(relAbund)) %>%
+     dplyr::mutate(gene = forcats::fct_relevel(factor(gene, levels = unique(gene)), 'NA', after = Inf)) 
+
+
+pd <- d
+pd$timePointDays <- jitter(pd$timePointDays, 3)
+pd$relAbund <- jitter(pd$relAbund, 1.5)
+pd <- bind_rows(subset(pd, gene == 'NA'), subset(pd, gene != 'NA'))
+
+
+ggplot(pd, aes(timePointDays, relAbund/100, group = paste(patient, posid), color = gene)) + 
+  theme_bw() +
+  scale_color_manual(name = 'Nearest gene', values=c(colorRampPalette(brewer.pal(12, "Paired"))(max(as.integer(d$gene))-1), '#DCDCDC')) +
+  geom_point(size = 4) + 
+  geom_line() +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = 'Time point (days)', y = 'Relative abundance') +
+  theme(axis.text.x=element_text(size=12), axis.text.y=element_text(size=12))+
+  ggtitle(paste0(n_distinct(d$posid), ' clones with longitudinal data which exceeded\n1', 
+                                      '% relative abundnance at any timepoint.\n',
+                                      'Clones exceeding 10% are color coded.'))
+
+
+
+
+
 # Test for enrichment of intSites near oncogenes in clones with relative abundances >= 1 % for each culture timepoint
 # where the large majority of cultures contain a single time point.
 d <- dplyr::group_by(data.frame(report$intSites), patient, GTSP) %>%
@@ -910,6 +952,150 @@ report$subjectsWithMultTimePoints <-
   unlist() %>% unname()
 
 
+# ScanStats
+
+
+
+scanStats <- function(gr1, gr2, gr1.label = 'A', gr2.label = 'B', kvals = '15L:30L', nperm = 100,
+                      cutpt.tail.expr = 'critVal.target(k, n, target = 5, posdiff = x)',
+                      cutpt.filter.expr = 'as.double(apply(x, 2, median, na.rm = TRUE))'
+                      #cutpt.filter.expr = paste0('apply(x, 2, quantile, probs = ', p, ', na.rm = TRUE)')
+){
+  library(GenomicRanges)
+  library(geneRxCluster)
+  
+  gr1$clusterSource <- TRUE
+  gr2$clusterSource <- FALSE
+  
+  gr3 <- c(gr1, gr2)
+  
+  df <- GenomicRanges::as.data.frame(gr3)
+  df <- df[order(df$seqnames, df$start),]
+  df$seqnames <- droplevels(df$seqnames)
+  row.names(df) <- NULL
+  df <- df[, c('seqnames', 'start', 'clusterSource')]
+  
+  comm <- paste0('gRxCluster(df$seqnames, df$start, df$clusterSource, ',  kvals, ', nperm=', nperm, ', cutpt.tail.expr=', cutpt.tail.expr, ', cutpt.filter.expr=', cutpt.filter.expr, ')')
+  scan <- eval(parse(text = comm))
+
+  browser()
+    
+  if(length(scan)==0) return(GRanges())
+  
+  gr1.overlap <- GenomicRanges::findOverlaps(gr1, scan, ignore.strand=TRUE)
+  gr2.overlap <- GenomicRanges::findOverlaps(gr2, scan, ignore.strand=TRUE)
+  
+  if(length(gr1.overlap) > 0 & length(gr2.overlap) == 0){
+    scan$clusterSource <- gr1.label
+    return(scan)
+  }
+  
+  if(length(gr1.overlap) == 0 & length(gr2.overlap) > 0){
+    scan$clusterSource <- gr2.label
+    return(scan)
+  }
+  
+  gr1.overlap <- stats::aggregate(queryHits ~ subjectHits, data=as.data.frame(gr1.overlap), FUN=length)
+  gr2.overlap <- stats::aggregate(queryHits ~ subjectHits, data=as.data.frame(gr2.overlap), FUN=length)
+  
+  gr1.list <- list()
+  gr1.list[gr1.overlap[,1]] <- gr1.overlap[,2]
+  
+  gr2.list <- list()
+  gr2.list[gr2.overlap[,1]] <- gr2.overlap[,2]
+  
+  # index error protection
+  gr1.list[seq(length(gr1.list)+1, (length(gr1.list) + length(scan)-length(gr1.list) + 1))] <- 0
+  gr2.list[seq(length(gr2.list)+1, (length(gr2.list) + length(scan)-length(gr2.list) + 1))] <- 0
+  
+  scan$clusterSource <- '?'
+  
+  for(i in 1:length(scan))
+  {
+    if(! is.null(gr1.list[[i]]) & is.null(gr2.list[[i]])){
+      scan[i]$clusterSource <- gr1.label
+    } else if (is.null(gr1.list[[i]]) & ! is.null(gr2.list[[i]])){
+      scan[i]$clusterSource <- gr2.label
+    } else if (gr1.list[[i]] > gr2.list[[i]]){
+      scan[i]$clusterSource <- gr1.label
+    } else {
+      scan[i]$clusterSource <- gr2.label
+    }
+  }
+  
+  scan
+}
+
+
+
+a <- subset(report$intSites, patient %in% c('pNA92', 'pNA93', 'pNA85') & timePointDays <= 14)
+b <- subset(report$intSites, patient %in% c('pNA92', 'pNA93', 'pNA85') & timePointDays > 14)
+
+tuning <- gt23::tuneScanStatistics(a, b)
+
+# 25 clusters
+s <- gt23::scanStats(a, b, kvals = '12L:29L', cutpt.filter.expr = 'apply(x, 2, quantile, probs = 0.775, na.rm = TRUE)', cutpt.tail.expr = 'critVal.target(k, n, target = 25, posdiff = x)')
+
+# 10 clusters 
+s <- gt23::scanStats(a, b, kvals = '11L:23L', 
+                     cutpt.filter.expr = 'apply(x, 2, quantile, probs = 0.825, na.rm = TRUE)', 
+                     cutpt.tail.expr = 'critVal.target(k, n, target = 10, posdiff = x)')
+
+
+dplyr::mutate(data.frame(s), width = (end-start+1)/1000, cluster = factor(1:n())) %>%
+dplyr::select(cluster, width, value1, value2, clusterSource) %>%
+gather('source','sites', c('value1',  'value2')) %>%
+dplyr::mutate(source = factor(source, levels = rev(unique(source)))) %>%
+ggplot(aes(factor(cluster), sites, fill = width, source = source)) +
+       theme_bw() +
+       scale_fill_gradient2(name = 'Width (KB)', low = 'green', mid = 'gold', high = 'red', midpoint = 3000) +
+       geom_bar(stat = "identity", position = 'dodge', width=.6, color = 'black') +
+       labs(x = 'ScanStat cluster', y = 'Sites')
+      
+
+
+a_Y664F <- subset(report$intSites, patient %in% c('pNA92_Y664F', 'pNA93_Y664F', 'pNA85_Y664F') & timePointDays <= 14)
+b_Y664F <- subset(report$intSites, patient %in% c('pNA92_Y664F', 'pNA93_Y664F', 'pNA85_Y664F') & timePointDays > 14)
+
+paste(sprintf("%.5f", n_distinct(subset(a_Y664F, nearestFeature == 'ARID1A')$posid) / n_distinct(a_Y664F$posid)), '/',
+      sprintf("%.5f", n_distinct(subset(b_Y664F, nearestFeature == 'ARID1A')$posid) / n_distinct(b_Y664F$posid)))
+
+
+tuning_Y664F <- tuneScanStatistics(a_Y664F, b_Y664F)
+
+15L:26L
+apply(x, 2, quantile, probs = 0.75, na.rm = TRUE)
+critVal.target(k, n, target = 25, posdiff = x)
+0.5559091
+
+s <- gt23::scanStats(a_Y664F, b_Y664F, kvals = '15L:50L', 
+                     nperm='200',
+                     cutpt.filter.expr = 'apply(x, 2, quantile, probs = 0.75, na.rm = TRUE)', 
+                     cutpt.tail.expr = 'critVal.target(k, n, target = 10, posdiff = x)')
+gRxSummary(s)$FDR
+
+s <- gt23::scanStats(a_Y664F, b_Y664F, kvals = '10L:50L', nperm = '500') 
+s$clusterWidthKD <- width(s) / 1000
+s$totalFDR <- gRxSummary(s)$FDR
+s[order(s$target.min)]
+
+
+
+
+
+
+dplyr::mutate(data.frame(s), width = (end-start+1)/1000, cluster = factor(1:n())) %>%
+  dplyr::select(cluster, width, value1, value2, clusterSource) %>%
+  gather('source','sites', c('value1',  'value2')) %>%
+  dplyr::mutate(source = factor(source, levels = rev(unique(source)))) %>%
+  ggplot(aes(factor(cluster), sites, fill = width, source = source)) +
+  theme_bw() +
+  scale_fill_gradient2(name = 'Width (KB)', low = 'green', mid = 'gold', high = 'red', midpoint = 1000) +
+  geom_bar(stat = "identity", position = 'dodge', width=.6, color = 'black') +
+  labs(x = 'ScanStat cluster', y = 'Sites')
+
+
+
 
 # Map STRINGdb ids to intSite nearest genes.
 d <- string_db$map(data.frame(report$intSites), "nearestFeature", removeUnmappedRows = FALSE)
@@ -953,7 +1139,7 @@ ggsave(report$preVspostFreqplot.Y664F[[2]], file = 'figures_and_tables/preVspost
 report$intsites.WT       <- subset(report$intSites, ! grepl('Y664F',patient))
 report$intsites.Y664F    <- subset(report$intSites, grepl('Y664F',patient))
 report$intsites.LS       <- subset(report$intSites, patient %in% report$subjectsWithMultTimePoints)
-report$intsites.LS_WT    <- subset(report$intSites, ! grepl('Y664F',patient) & patient %in% report$subjectsWithMultTimePoints) 
+report$intsites.LS_WT    <- subset(report$intSites, ! grepl('Y664F',patient) & patient %in% report$subjectsWithMultTicanmePoints) 
 report$intsites.LS_Y664F <- subset(report$intSites, grepl('Y664F',patient) & patient %in% report$subjectsWithMultTimePoints)
 
 
